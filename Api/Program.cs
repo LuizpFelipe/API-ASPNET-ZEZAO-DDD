@@ -4,6 +4,7 @@ using Domain.Interfaces;
 using Infrastructure.Context;
 using Infrastructure.Repositories;
 using Infrastructure.Security;
+using Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,13 +18,17 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IUserServices, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISecurityService, BCryptoSecurityService>();
+
+// Injeções de dependência do CRUD de Alunos
+builder.Services.AddScoped<IAlunoRepository, AlunoRepository>();
+builder.Services.AddScoped<IAlunoService, AlunoService>();
+builder.Services.AddScoped<IArmazenamentoArquivoService, ArmazenamentoLocalService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
@@ -39,12 +44,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.UseCors("AllowAll");
 
+app.UseStaticFiles();
+app.UseHttpsRedirection();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
