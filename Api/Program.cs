@@ -1,4 +1,4 @@
-using Application.Interfaces;
+ using Application.Interfaces;
 using Application.Services;
 using Domain.Interfaces;
 using Infrastructure.Context;
@@ -66,16 +66,13 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+app.UseSwagger();
+app.UseSwaggerUI();
 
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var securityService = scope.ServiceProvider.GetRequiredService<ISecurityService>();
-    UsuarioSeeder.Seed(dbContext, securityService);
-}
+using var scope = app.Services.CreateScope();
+var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+var securityService = scope.ServiceProvider.GetRequiredService<ISecurityService>();
+UsuarioSeeder.Seed(dbContext, securityService);
 
 app.UseCors("AllowAll");
 app.UseAuthentication();
