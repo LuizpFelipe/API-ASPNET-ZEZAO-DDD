@@ -10,10 +10,12 @@ namespace Application.Services;
 public class AlunoService : IAlunoService
 {
     private readonly IAlunoRepository _alunoRepository;
+    private readonly ICategoriaRepository _categoriaRepository; 
 
-    public AlunoService(IAlunoRepository alunoRepository)
+    public AlunoService(IAlunoRepository alunoRepository, ICategoriaRepository categoriaRepository)
     {
         _alunoRepository = alunoRepository;
+        _categoriaRepository = categoriaRepository;
     }
 
     public async Task<AlunoResponseDTO> CriarAsync(CriarAlunoRequestDTO dto)
@@ -24,13 +26,26 @@ public class AlunoService : IAlunoService
             return new AlunoResponseDTO { Status = false, Message = "Aluno já cadastrado no sistema." };
         }
 
+        int idade = CalcularIdade(dto.DataNascimento);
+
+        var categoria = await _categoriaRepository.ObterPorIdadeAsync(idade);
+        if (categoria == null)
+        {
+            return new AlunoResponseDTO { Status = false, Message = $"Nenhuma categoria cadastrada compatível com a idade de {idade} anos." };
+        }
+
         var aluno = new Aluno(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico,
                               dto.FotoUrl, dto.ResponsavelNome, dto.Telefone,
-                              dto.Endereco, dto.TurmaId);
+                              dto.Endereco, dto.TurmaId, categoria.Id);
 
         await _alunoRepository.AdicionarAsync(aluno);
 
-        return new AlunoResponseDTO { Status = true, Message = "Aluno cadastrado com sucesso.", Data = new { aluno.Id, Categoria = CalcularCategoria(aluno.DataNascimento) } };
+        return new AlunoResponseDTO
+        {
+            Status = true,
+            Message = "Aluno cadastrado com sucesso.",
+            Data = new { aluno.Id, Categoria = categoria.Nome }
+        };
     }
 
     public async Task<AlunoResponseDTO> AtualizarAsync(Guid id, AtualizarAlunoRequestDTO dto)
@@ -41,7 +56,14 @@ public class AlunoService : IAlunoService
         var existe = await _alunoRepository.ExisteComMesmoNomeEDataNascimentoAsync(dto.NomeCompleto, dto.DataNascimento, id);
         if (existe) return new AlunoResponseDTO { Status = false, Message = "Outro aluno já possui este nome e data de nascimento." };
 
-        aluno.AtualizarDados(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico, dto.FotoUrl, dto.ResponsavelNome, dto.Telefone, dto.Endereco, dto.TurmaId);
+        int idade = CalcularIdade(dto.DataNascimento);
+        var categoria = await _categoriaRepository.ObterPorIdadeAsync(idade);
+        if (categoria == null)
+        {
+            return new AlunoResponseDTO { Status = false, Message = $"Nenhuma categoria cadastrada compatível com a idade de {idade} anos." };
+        }
+
+        aluno.AtualizarDados(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico, dto.FotoUrl, dto.ResponsavelNome, dto.Telefone, dto.Endereco, dto.TurmaId, categoria.Id);
         await _alunoRepository.AtualizarAsync(aluno);
 
         return new AlunoResponseDTO { Status = true, Message = "Aluno atualizado com sucesso." };
@@ -52,7 +74,7 @@ public class AlunoService : IAlunoService
         var aluno = await _alunoRepository.ObterPorIdAsync(id);
         if (aluno == null) return new AlunoResponseDTO { Status = false, Message = "Aluno não encontrado." };
 
-        aluno.Desativar(); 
+        aluno.Desativar();
         await _alunoRepository.AtualizarAsync(aluno);
 
         return new AlunoResponseDTO { Status = true, Message = "Aluno inativado com sucesso." };
@@ -72,12 +94,11 @@ public class AlunoService : IAlunoService
         return new AlunoResponseDTO { Status = true, Data = aluno };
     }
 
-    private string CalcularCategoria(DateOnly dataNascimento)
+    private int CalcularIdade(DateOnly dataNascimento)
     {
-        int idade = DateTime.Now.Year - dataNascimento.Year;
-        if (idade <= 11) return "Sub-11";
-        if (idade == 12) return "Sub-12";
-        if (idade == 13) return "Sub-13";
-        return "Sub-14";
+        var hoje = DateOnly.FromDateTime(DateTime.Now);
+        int idade = hoje.Year - dataNascimento.Year;
+        if (dataNascimento > hoje.AddYears(-idade)) idade--;
+        return idade;
     }
 }

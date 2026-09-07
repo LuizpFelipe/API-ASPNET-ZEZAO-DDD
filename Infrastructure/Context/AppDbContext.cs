@@ -13,10 +13,12 @@ namespace Infrastructure.Context
         public DbSet<User> Users => Set<User>();
         public DbSet<Usuario> Usuarios => Set<Usuario>();
         public DbSet<Aluno> Alunos => Set<Aluno>();
+        public DbSet<Categoria> Categorias => Set<Categoria>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
     }

@@ -1,8 +1,9 @@
- using Application.Interfaces;
+using Application.Interfaces;
 using Application.Services;
 using Domain.Interfaces;
 using Infrastructure.Context;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Seeders; 
 using Infrastructure.Repositories;
 using Infrastructure.Security;
 using Infrastructure.Storage;
@@ -28,15 +29,16 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IUserServices, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISecurityService, BCryptoSecurityService>();
-
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 
-// Injeções de dependência do CRUD de Alunos e Arquivos
 builder.Services.AddScoped<IAlunoRepository, AlunoRepository>();
 builder.Services.AddScoped<IAlunoService, AlunoService>();
 builder.Services.AddScoped<IArmazenamentoArquivoService, ArmazenamentoLocalService>();
+
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<ICategoriaService, CategoriaService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
@@ -72,7 +74,10 @@ app.UseSwaggerUI();
 using var scope = app.Services.CreateScope();
 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 var securityService = scope.ServiceProvider.GetRequiredService<ISecurityService>();
+
 UsuarioSeeder.Seed(dbContext, securityService);
+
+await CategoriaSeeder.SeedAsync(dbContext);
 
 app.UseCors("AllowAll");
 app.UseAuthentication();
