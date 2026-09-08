@@ -17,15 +17,17 @@ public class AlunoRepository : IAlunoRepository
 
     public async Task<IEnumerable<Aluno>> ObterTodosAsync()
     {
-        return await _context.Set<Aluno>()
+        return await _context.Alunos
+            .Include(a => a.Categoria) 
             .Where(a => a.Status != StatusAluno.Inativo)
             .ToListAsync();
     }
 
     public async Task<Aluno?> ObterPorIdAsync(Guid id)
     {
-        return await _context.Set<Aluno>()
-            .FirstOrDefaultAsync(a => a.Id == id && a.Status != StatusAluno.Inativo);
+        return await _context.Alunos
+            .Include(a => a.Categoria) 
+            .FirstOrDefaultAsync(a => a.Id == id);
     }
 
     public async Task<bool> ExisteComMesmoNomeEDataNascimentoAsync(string nome, DateOnly dataNascimento, Guid? ignorarId = null)
