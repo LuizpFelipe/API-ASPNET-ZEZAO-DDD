@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text;
 
 using System;
+    
+namespace Application.Response;
 
 public class ProfessorResponseDTO
 {

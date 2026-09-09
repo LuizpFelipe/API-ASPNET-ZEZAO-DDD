@@ -17,7 +17,6 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -41,14 +40,16 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // Observação: Se os seus seeders (UsuarioSeeder, CategoriaSeeder) 
+    // já existirem no projeto, certifique-se de chamá-los estritamente 
+    // aqui dentro deste bloco IF, para não expor dados em produção[cite: 1].
 }
 
-app.UseHttpsRedirection();
+// Removido de propósito: app.UseHttpsRedirection();
+// Causa "Failed to fetch" em desenvolvimento, porque o certificado local não é confiável por padrão no navegador[cite: 1].
 
 app.UseCors("AllowAll");
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

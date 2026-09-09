@@ -45,6 +45,7 @@ namespace Api.Controllers
         public async Task<IActionResult> Post([FromBody] CriarTurmaRequestDTO dto)
         {
             var result = await _turmaService.CriarAsync(dto);
+            if (!result.Status) return BadRequest(result); 
             return Ok(result);
         }
 
