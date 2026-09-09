@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Application.Interfaces;
-// using Application.Request;
+using Application.Request;
 
 namespace Api.Controllers
 {
@@ -38,6 +38,7 @@ namespace Api.Controllers
         public async Task<IActionResult> Post([FromBody] CriarProfessorRequestDTO dto)
         {
             var result = await _professorService.CriarAsync(dto);
+            if (!result.Status) return BadRequest(result); 
             return Ok(result);
         }
 
