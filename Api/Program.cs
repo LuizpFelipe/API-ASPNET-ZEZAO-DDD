@@ -3,7 +3,7 @@ using Application.Services;
 using Domain.Interfaces;
 using Infrastructure.Context;
 using Infrastructure.Persistence;
-using Infrastructure.Persistence.Seeders; 
+using Infrastructure.Persistence.Seeders;
 using Infrastructure.Repositories;
 using Infrastructure.Security;
 using Infrastructure.Storage;
@@ -78,15 +78,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // Observação: Se os seus seeders (UsuarioSeeder, CategoriaSeeder) 
-    // já existirem no projeto, certifique-se de chamá-los estritamente 
-    // aqui dentro deste bloco IF, para não expor dados em produção[cite: 1].
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var securityService = scope.ServiceProvider.GetRequiredService<ISecurityService>();
+
+    UsuarioSeeder.Seed(dbContext, securityService);
+    await CategoriaSeeder.SeedAsync(dbContext);
 }
 
-// Removido de propósito: app.UseHttpsRedirection();
-// Causa "Failed to fetch" em desenvolvimento, porque o certificado local não é confiável por padrão no navegador[cite: 1].
 
 app.UseCors("AllowAll");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

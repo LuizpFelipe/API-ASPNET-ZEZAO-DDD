@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Domain.Entities;
+﻿using Domain.Entities;
 using Domain.Interfaces;
 using Infrastructure.Context; // Certifique-se de que o namespace do seu DbContext está correto
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories
 {
@@ -23,7 +20,7 @@ namespace Infrastructure.Repositories
             return await _context.Professores.ToListAsync();
         }
 
-        public async Task<Professor> ObterPorIdAsync(Guid id)
+        public async Task<Professor?> ObterPorIdAsync(Guid id)
         {
             return await _context.Professores.FindAsync(id);
         }

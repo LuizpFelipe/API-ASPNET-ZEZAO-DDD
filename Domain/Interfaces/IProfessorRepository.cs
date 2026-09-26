@@ -8,7 +8,7 @@ namespace Domain.Interfaces
     public interface IProfessorRepository
     {
         Task<IEnumerable<Professor>> ObterTodosAsync();
-        Task<Professor> ObterPorIdAsync(Guid id);
+        Task<Professor?> ObterPorIdAsync(Guid id);
         Task AdicionarAsync(Professor professor);
         Task AtualizarAsync(Professor professor);
         Task RemoverAsync(Professor professor);
