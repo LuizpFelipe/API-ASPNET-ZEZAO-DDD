@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Request;
 using Application.Response;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 
 namespace Application.Services
@@ -13,16 +10,16 @@ namespace Application.Services
     public class ProfessorService : IProfessorService
     {
         private readonly IProfessorRepository _professorRepository;
-        private readonly IUserRepository _userRepository; // Utilizando o repositório em inglês
+        private readonly IUsuarioRepository _usuarioRepository;
         private readonly ISecurityService _securityService;
 
         public ProfessorService(
             IProfessorRepository professorRepository,
-            IUserRepository userRepository,
+            IUsuarioRepository usuarioRepository,
             ISecurityService securityService)
         {
             _professorRepository = professorRepository;
-            _userRepository = userRepository;
+            _usuarioRepository = usuarioRepository;
             _securityService = securityService;
         }
 
@@ -52,14 +49,14 @@ namespace Application.Services
             // 1. Gera o hash da senha
             var senhaHash = _securityService.HashPassword(dto.Senha);
 
-            // 2. Cria a entidade User (adaptando NomeUsuario para o campo de Email/Login)
-            var user = new User(dto.Nome, dto.NomeUsuario, senhaHash);
+            // 2. Cria a entidade Usuario de verdade (a mesma que o login usa)
+            var usuario = new Usuario(dto.NomeUsuario, senhaHash, PerfilUsuario.Professor);
 
-            // 3. Salva o User no banco de dados real
-            await _userRepository.AddAsync(user);
+            // 3. Salva o Usuario no banco de dados real
+            await _usuarioRepository.AddAsync(usuario);
 
-            // 4. Cria o Professor vinculando com o Id do User recém-criado
-            var professor = new Professor(dto.Nome, dto.Telefone, user.Id);
+            // 4. Cria o Professor vinculando com o Id do Usuario recém-criado
+            var professor = new Professor(dto.Nome, dto.Telefone, usuario.Id);
             await _professorRepository.AdicionarAsync(professor);
 
             return new ProfessorResponseDTO { Status = true, Message = "Professor criado com sucesso", Data = professor };
@@ -81,8 +78,6 @@ namespace Application.Services
             var professor = await _professorRepository.ObterPorIdAsync(id);
             if (professor == null) return new ProfessorResponseDTO { Status = false, Message = "Professor não encontrado" };
 
-            // Ponto de atenção: Verificar vínculo com turmas antes de remover, 
-            // ou alterar status do User vinculado para Inativo.
             await _professorRepository.RemoverAsync(professor);
 
             return new ProfessorResponseDTO { Status = true, Message = "Removido com sucesso" };
