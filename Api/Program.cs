@@ -82,7 +82,12 @@ if (app.Environment.IsDevelopment())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var securityService = scope.ServiceProvider.GetRequiredService<ISecurityService>();
 
-    UsuarioSeeder.Seed(dbContext, securityService);
+    var emailDoCoordenador = builder.Configuration["UsuariosIniciais:EmailDoCoordenador"]
+        ?? throw new InvalidOperationException("Configure UsuariosIniciais:EmailDoCoordenador.");
+    var emailDoProfessor = builder.Configuration["UsuariosIniciais:EmailDoProfessor"]
+        ?? throw new InvalidOperationException("Configure UsuariosIniciais:EmailDoProfessor.");
+
+    UsuarioSeeder.Seed(dbContext, securityService, emailDoCoordenador, emailDoProfessor);
     await CategoriaSeeder.SeedAsync(dbContext);
 }
 

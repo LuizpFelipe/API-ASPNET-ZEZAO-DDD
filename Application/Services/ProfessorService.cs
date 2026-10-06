@@ -46,16 +46,12 @@ namespace Application.Services
 
         public async Task<ProfessorResponseDTO> CriarAsync(CriarProfessorRequestDTO dto)
         {
-            // 1. Gera o hash da senha
             var senhaHash = _securityService.HashPassword(dto.Senha);
 
-            // 2. Cria a entidade Usuario de verdade (a mesma que o login usa)
-            var usuario = new Usuario(dto.NomeUsuario, senhaHash, PerfilUsuario.Professor);
+            var usuario = new Usuario(dto.NomeUsuario, dto.Email, senhaHash, PerfilUsuario.Professor);
 
-            // 3. Salva o Usuario no banco de dados real
             await _usuarioRepository.AddAsync(usuario);
 
-            // 4. Cria o Professor vinculando com o Id do Usuario recém-criado
             var professor = new Professor(dto.Nome, dto.Telefone, usuario.Id);
             await _professorRepository.AdicionarAsync(professor);
 
