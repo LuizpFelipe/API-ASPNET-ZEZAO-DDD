@@ -28,6 +28,13 @@ namespace Infrastructure.Persistence
             builder.Property(u => u.Perfil)
                 .HasConversion<string>()
                 .IsRequired();
+
+            builder.Property(u => u.Email)
+                .IsRequired()
+                .HasMaxLength(254);
+
+            builder.HasIndex(u => u.Email)
+                .IsUnique();
         }
     }
 }
