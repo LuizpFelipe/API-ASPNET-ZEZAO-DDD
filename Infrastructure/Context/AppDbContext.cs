@@ -16,6 +16,8 @@ namespace Infrastructure.Context
         public DbSet<Usuario> Usuarios => Set<Usuario>();
         public DbSet<Aluno> Alunos => Set<Aluno>();
         public DbSet<Categoria> Categorias => Set<Categoria>();
+        public DbSet<Campeonato> Campeonatos => Set<Campeonato>();
+        public DbSet<ParticipacaoCampeonato> ParticipacoesCampeonato => Set<ParticipacaoCampeonato>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -26,7 +28,7 @@ namespace Infrastructure.Context
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
-           
+
         }
     }
 }
