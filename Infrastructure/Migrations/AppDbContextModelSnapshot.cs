@@ -155,6 +155,28 @@ namespace Infrastructure.Migrations
                 b.ToTable("ParticipacoesCampeonato", (string)null);
             });
 
+            modelBuilder.Entity("Domain.Entities.Coordenador", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique();
+
+                    b.ToTable("Coordenadores", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Professor", b =>
             {
                 b.Property<Guid>("Id")
@@ -272,6 +294,26 @@ namespace Infrastructure.Migrations
             });
 
             modelBuilder.Entity("Domain.Entities.Aluno", b =>
+                {
+                    b.HasOne("Domain.Entities.Categoria", "Categoria")
+                        .WithMany()
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Categoria");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Coordenador", b =>
+                {
+                    b.HasOne("Domain.Entities.Usuario", "Usuario")
+                        .WithOne()
+                        .HasForeignKey("Domain.Entities.Coordenador", "UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
             {
                 b.HasOne("Domain.Entities.Categoria", "Categoria")
                     .WithMany()

@@ -45,6 +45,8 @@ builder.Services.AddScoped<IArmazenamentoArquivoService, ArmazenamentoLocalServi
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<ICategoriaService, CategoriaService>();
 
+builder.Services.AddScoped<ICoordenadorRepository, CoordenadorRepository>();
+builder.Services.AddScoped<ICoordenadorService, CoordenadorService>();
 builder.Services.AddScoped<ICampeonatoRepository, CampeonatoRepository>();
 builder.Services.AddScoped<ICampeonatoService, CampeonatoService>();
 
