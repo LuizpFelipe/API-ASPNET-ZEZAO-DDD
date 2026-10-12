@@ -45,6 +45,9 @@ builder.Services.AddScoped<IArmazenamentoArquivoService, ArmazenamentoLocalServi
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<ICategoriaService, CategoriaService>();
 
+builder.Services.AddScoped<ICoordenadorRepository, CoordenadorRepository>();
+builder.Services.AddScoped<ICoordenadorService, CoordenadorService>();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")

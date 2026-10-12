@@ -16,6 +16,7 @@ namespace Infrastructure.Context
         public DbSet<Usuario> Usuarios => Set<Usuario>();
         public DbSet<Aluno> Alunos => Set<Aluno>();
         public DbSet<Categoria> Categorias => Set<Categoria>();
+        public DbSet<Coordenador> Coordenadores => Set<Coordenador>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,8 +26,6 @@ namespace Infrastructure.Context
             modelBuilder.Entity<Turma>().ToTable("Turma");
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-
-           
         }
     }
 }
