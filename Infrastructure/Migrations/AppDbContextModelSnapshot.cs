@@ -23,82 +23,137 @@ namespace Infrastructure.Migrations
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Domain.Entities.Aluno", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
 
-                    b.Property<Guid>("CategoriaId")
-                        .HasColumnType("uuid");
+                b.Property<Guid>("CategoriaId")
+                    .HasColumnType("uuid");
 
-                    b.Property<DateTime>("DataCadastro")
-                        .HasColumnType("timestamp with time zone");
+                b.Property<DateTime>("DataCadastro")
+                    .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateOnly>("DataNascimento")
-                        .HasColumnType("date");
+                b.Property<DateOnly>("DataNascimento")
+                    .HasColumnType("date");
 
-                    b.Property<string>("Endereco")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("Endereco")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.Property<string>("FotoUrl")
-                        .HasColumnType("text");
+                b.Property<string>("FotoUrl")
+                    .HasColumnType("text");
 
-                    b.Property<int>("NivelTecnico")
-                        .HasColumnType("integer");
+                b.Property<int>("NivelTecnico")
+                    .HasColumnType("integer");
 
-                    b.Property<string>("NomeCompleto")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("NomeCompleto")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.Property<string>("ResponsavelNome")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("ResponsavelNome")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                b.Property<int>("Status")
+                    .HasColumnType("integer");
 
-                    b.Property<string>("Telefone")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("Telefone")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.Property<Guid>("TurmaId")
-                        .HasColumnType("uuid");
+                b.Property<Guid>("TurmaId")
+                    .HasColumnType("uuid");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("CategoriaId");
+                b.HasIndex("CategoriaId");
 
-                    b.HasIndex("NomeCompleto", "DataNascimento")
-                        .IsUnique();
+                b.HasIndex("NomeCompleto", "DataNascimento")
+                    .IsUnique();
 
-                    b.ToTable("Alunos");
-                });
+                b.ToTable("Alunos");
+            });
+
+            modelBuilder.Entity("Domain.Entities.Campeonato", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
+
+                b.Property<Guid>("CategoriaId")
+                    .HasColumnType("uuid");
+
+                b.Property<DateOnly>("Data")
+                    .HasColumnType("date");
+
+                b.Property<string>("Nome")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)");
+
+                b.HasKey("Id");
+
+                b.HasIndex("CategoriaId");
+
+                b.ToTable("Campeonatos", (string)null);
+            });
 
             modelBuilder.Entity("Domain.Entities.Categoria", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
 
-                    b.Property<int>("IdadeMax")
-                        .HasColumnType("integer");
+                b.Property<int>("IdadeMax")
+                    .HasColumnType("integer");
 
-                    b.Property<int>("IdadeMin")
-                        .HasColumnType("integer");
+                b.Property<int>("IdadeMin")
+                    .HasColumnType("integer");
 
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                b.Property<string>("Nome")
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnType("character varying(50)");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("Nome")
-                        .IsUnique();
+                b.HasIndex("Nome")
+                    .IsUnique();
 
-                    b.ToTable("Categorias", (string)null);
-                });
+                b.ToTable("Categorias", (string)null);
+            });
+
+            modelBuilder.Entity("Domain.Entities.ParticipacaoCampeonato", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
+
+                b.Property<Guid>("AlunoId")
+                    .HasColumnType("uuid");
+
+                b.Property<decimal>("Aproveitamento")
+                    .HasColumnType("numeric");
+
+                b.Property<Guid>("CampeonatoId")
+                    .HasColumnType("uuid");
+
+                b.Property<int>("JogosDisputados")
+                    .HasColumnType("integer");
+
+                b.Property<string>("Posicao")
+                    .HasMaxLength(50)
+                    .HasColumnType("character varying(50)");
+
+                b.HasKey("Id");
+
+                b.HasIndex("AlunoId");
+
+                b.HasIndex("CampeonatoId");
+
+                b.ToTable("ParticipacoesCampeonato", (string)null);
+            });
 
             modelBuilder.Entity("Domain.Entities.Coordenador", b =>
                 {
@@ -123,120 +178,120 @@ namespace Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("Domain.Entities.Professor", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
 
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
+                b.Property<string>("Nome")
+                    .IsRequired()
+                    .HasMaxLength(150)
+                    .HasColumnType("character varying(150)");
 
-                    b.Property<string>("Telefone")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                b.Property<string>("Telefone")
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnType("character varying(20)");
 
-                    b.Property<Guid>("UsuarioId")
-                        .HasColumnType("uuid");
+                b.Property<Guid>("UsuarioId")
+                    .HasColumnType("uuid");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("Professor", (string)null);
-                });
+                b.ToTable("Professor", (string)null);
+            });
 
             modelBuilder.Entity("Domain.Entities.Turma", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
 
-                    b.Property<Guid>("CategoriaId")
-                        .HasColumnType("uuid");
+                b.Property<Guid>("CategoriaId")
+                    .HasColumnType("uuid");
 
-                    b.Property<string>("DiasSemana")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                b.Property<string>("DiasSemana")
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnType("character varying(50)");
 
-                    b.Property<string>("Horario")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                b.Property<string>("Horario")
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnType("character varying(20)");
 
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                b.Property<string>("Nome")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)");
 
-                    b.Property<Guid>("ProfessorId")
-                        .HasColumnType("uuid");
+                b.Property<Guid>("ProfessorId")
+                    .HasColumnType("uuid");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("Turma", (string)null);
-                });
+                b.ToTable("Turma", (string)null);
+            });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                b.Property<string>("Email")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)");
 
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("PasswordHash")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
-                });
+                b.ToTable("Users", (string)null);
+            });
 
             modelBuilder.Entity("Domain.Entities.Usuario", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(254)
-                        .HasColumnType("character varying(254)");
+                b.Property<string>("Email")
+                    .IsRequired()
+                    .HasMaxLength(254)
+                    .HasColumnType("character varying(254)");
 
-                    b.Property<string>("NomeUsuario")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                b.Property<string>("NomeUsuario")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)");
 
-                    b.Property<string>("Perfil")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("Perfil")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.Property<string>("SenhaHash")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("SenhaHash")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
+                b.HasIndex("Email")
+                    .IsUnique();
 
-                    b.HasIndex("NomeUsuario")
-                        .IsUnique();
+                b.HasIndex("NomeUsuario")
+                    .IsUnique();
 
-                    b.ToTable("Usuarios", (string)null);
-                });
+                b.ToTable("Usuarios", (string)null);
+            });
 
             modelBuilder.Entity("Domain.Entities.Aluno", b =>
                 {
@@ -259,6 +314,39 @@ namespace Infrastructure.Migrations
 
                     b.Navigation("Usuario");
                 });
+            {
+                b.HasOne("Domain.Entities.Categoria", "Categoria")
+                    .WithMany()
+                    .HasForeignKey("CategoriaId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("Categoria");
+            });
+
+            modelBuilder.Entity("Domain.Entities.Campeonato", b =>
+            {
+                b.HasOne("Domain.Entities.Categoria", null)
+                    .WithMany()
+                    .HasForeignKey("CategoriaId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+            });
+
+            modelBuilder.Entity("Domain.Entities.ParticipacaoCampeonato", b =>
+            {
+                b.HasOne("Domain.Entities.Aluno", null)
+                    .WithMany()
+                    .HasForeignKey("AlunoId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.HasOne("Domain.Entities.Campeonato", null)
+                    .WithMany()
+                    .HasForeignKey("CampeonatoId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+            });
 #pragma warning restore 612, 618
         }
     }

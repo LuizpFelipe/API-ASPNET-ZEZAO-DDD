@@ -17,6 +17,8 @@ namespace Infrastructure.Context
         public DbSet<Aluno> Alunos => Set<Aluno>();
         public DbSet<Categoria> Categorias => Set<Categoria>();
         public DbSet<Coordenador> Coordenadores => Set<Coordenador>();
+        public DbSet<Campeonato> Campeonatos => Set<Campeonato>();
+        public DbSet<ParticipacaoCampeonato> ParticipacoesCampeonato => Set<ParticipacaoCampeonato>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -26,6 +28,8 @@ namespace Infrastructure.Context
             modelBuilder.Entity<Turma>().ToTable("Turma");
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+
         }
     }
 }
