@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261011120000_AdicionarCampeonato")]
-    partial class AdicionarCampeonato
+    [Migration("20261017033706_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -127,6 +127,28 @@ namespace Infrastructure.Migrations
                     b.ToTable("Categorias", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Coordenador", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique();
+
+                    b.ToTable("Coordenadores", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.ParticipacaoCampeonato", b =>
                 {
                     b.Property<Guid>("Id")
@@ -156,6 +178,34 @@ namespace Infrastructure.Migrations
                     b.HasIndex("CampeonatoId");
 
                     b.ToTable("ParticipacoesCampeonato", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Presenca", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlunoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("Data")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("Presente")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("TurmaId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TurmaId", "Data");
+
+                    b.HasIndex("AlunoId", "TurmaId", "Data")
+                        .IsUnique();
+
+                    b.ToTable("Presencas", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Professor", b =>
@@ -294,6 +344,17 @@ namespace Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Domain.Entities.Coordenador", b =>
+                {
+                    b.HasOne("Domain.Entities.Usuario", "Usuario")
+                        .WithOne()
+                        .HasForeignKey("Domain.Entities.Coordenador", "UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("Domain.Entities.ParticipacaoCampeonato", b =>
                 {
                     b.HasOne("Domain.Entities.Aluno", null)
@@ -305,6 +366,21 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Campeonato", null)
                         .WithMany()
                         .HasForeignKey("CampeonatoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.Presenca", b =>
+                {
+                    b.HasOne("Domain.Entities.Aluno", null)
+                        .WithMany()
+                        .HasForeignKey("AlunoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Turma", null)
+                        .WithMany()
+                        .HasForeignKey("TurmaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
