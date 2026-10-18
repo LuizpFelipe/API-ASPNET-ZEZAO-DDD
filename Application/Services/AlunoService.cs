@@ -11,11 +11,16 @@ public class AlunoService : IAlunoService
 {
     private readonly IAlunoRepository _alunoRepository;
     private readonly ICategoriaRepository _categoriaRepository; 
+    private readonly IContratoService _contratoService;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public AlunoService(IAlunoRepository alunoRepository, ICategoriaRepository categoriaRepository)
+    public AlunoService(IAlunoRepository alunoRepository, ICategoriaRepository categoriaRepository,
+                        IContratoService contratoService, IUnitOfWork unitOfWork)
     {
         _alunoRepository = alunoRepository;
         _categoriaRepository = categoriaRepository;
+        _contratoService = contratoService;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<AlunoResponseDTO> CriarAsync(CriarAlunoRequestDTO dto)
@@ -38,7 +43,11 @@ public class AlunoService : IAlunoService
                               dto.FotoUrl, dto.ResponsavelNome, dto.Telefone,
                               dto.Endereco, dto.TurmaId, categoria.Id);
 
-        await _alunoRepository.AdicionarAsync(aluno);
+        await _unitOfWork.ExecutarEmTransacaoAsync(async () =>
+        {
+            await _alunoRepository.AdicionarAsync(aluno);
+            await _contratoService.CriarAsync(aluno.Id);
+        });
 
         return new AlunoResponseDTO
         {

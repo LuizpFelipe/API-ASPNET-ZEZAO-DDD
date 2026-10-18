@@ -1,7 +1,9 @@
+using Application.Configuration;
 using Application.Interfaces;
 using Application.Services;
 using Domain.Interfaces;
 using Infrastructure.Context;
+using Infrastructure.Pdf;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Seeders;
 using Infrastructure.Repositories;
@@ -52,6 +54,14 @@ builder.Services.AddScoped<ICampeonatoService, CampeonatoService>();
 
 builder.Services.AddScoped<IPresencaRepository, PresencaRepository>();
 builder.Services.AddScoped<IPresencaService, PresencaService>();
+
+builder.Services.AddSingleton(builder.Configuration.GetSection("Contrato").Get<ConfiguracoesContrato>()
+    ?? throw new InvalidOperationException("Configuração 'Contrato' não encontrada em appsettings."));
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IContratoRepository, ContratoRepository>();
+builder.Services.AddScoped<IParcelaRepository, ParcelaRepository>();
+builder.Services.AddScoped<IContratoService, ContratoService>();
+builder.Services.AddScoped<IContratoPdfService, ContratoPdfService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(

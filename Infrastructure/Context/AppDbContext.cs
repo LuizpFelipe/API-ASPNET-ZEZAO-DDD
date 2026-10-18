@@ -19,6 +19,8 @@ namespace Infrastructure.Context
         public DbSet<Coordenador> Coordenadores => Set<Coordenador>();
         public DbSet<Campeonato> Campeonatos => Set<Campeonato>();
         public DbSet<ParticipacaoCampeonato> ParticipacoesCampeonato => Set<ParticipacaoCampeonato>();
+        public DbSet<Contrato> Contratos => Set<Contrato>();
+        public DbSet<Parcela> Parcelas => Set<Parcela>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
