@@ -22,6 +22,8 @@ namespace Infrastructure.Context
         public DbSet<Contrato> Contratos => Set<Contrato>();
         public DbSet<Parcela> Parcelas => Set<Parcela>();
 
+        public DbSet<CodigoRecuperacaoSenha> CodigosRecuperacaoSenha => Set<CodigoRecuperacaoSenha>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
