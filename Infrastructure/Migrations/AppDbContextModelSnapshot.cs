@@ -126,6 +126,48 @@ namespace Infrastructure.Migrations
                     b.ToTable("Categorias", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.CodigoRecuperacaoSenha", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CodigoHash")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiraEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Tentativas")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("TokenExpiraEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("Usado")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash");
+
+                    b.HasIndex("UsuarioId", "CriadoEm");
+
+                    b.ToTable("CodigosRecuperacaoSenha", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Contrato", b =>
                 {
                     b.Property<Guid>("Id")
@@ -417,6 +459,15 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("CategoriaId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.CodigoRecuperacaoSenha", b =>
+                {
+                    b.HasOne("Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

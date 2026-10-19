@@ -3,6 +3,7 @@ using Application.Interfaces;
 using Application.Services;
 using Domain.Interfaces;
 using Infrastructure.Context;
+using Infrastructure.Email;
 using Infrastructure.Pdf;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Seeders;
@@ -27,6 +28,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.Configure<ConfiguracoesSmtp>(builder.Configuration.GetSection("Smtp"));
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+builder.Services.AddScoped<ICodigoRecuperacaoSenhaRepository, CodigoRecuperacaoSenhaRepository>();
+builder.Services.AddScoped<IRecuperacaoSenhaService, RecuperacaoSenhaService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 
 builder.Services.AddScoped<IUserServices, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();

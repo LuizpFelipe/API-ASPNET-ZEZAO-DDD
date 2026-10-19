@@ -28,6 +28,11 @@ namespace Domain.Entities
             Email = NormalizarEmail(novoEmail);
         }
 
+        public void AlterarSenhaHash(string novaSenhaHash)
+        {
+            SenhaHash = novaSenhaHash;
+        }
+
         public static bool TentarNormalizarEmail(string? email, out string emailNormalizado)
         {
             emailNormalizado = (email ?? string.Empty).Trim().ToLowerInvariant();
