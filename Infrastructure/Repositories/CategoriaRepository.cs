@@ -1,17 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Domain.Entities;
 using Domain.Interfaces;
-using Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Infrastructure.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories
 {
     public class CategoriaRepository : ICategoriaRepository
     {
-        private readonly AppDbContext _context; 
+        private readonly AppDbContext _context;
 
         public CategoriaRepository(AppDbContext context)
         {
@@ -66,6 +62,13 @@ namespace Infrastructure.Repositories
         {
             _context.Set<Categoria>().Remove(categoria);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> PossuiVinculosAsync(Guid categoriaId)
+        {
+            return await _context.Set<Aluno>().AnyAsync(a => a.CategoriaId == categoriaId)
+                || await _context.Set<Turma>().AnyAsync(t => t.CategoriaId == categoriaId)
+                || await _context.Set<Campeonato>().AnyAsync(c => c.CategoriaId == categoriaId);
         }
     }
 }

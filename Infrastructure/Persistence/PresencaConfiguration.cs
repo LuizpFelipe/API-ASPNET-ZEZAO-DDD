@@ -24,12 +24,12 @@ namespace Infrastructure.Persistence
             builder.HasOne<Aluno>()
                 .WithMany()
                 .HasForeignKey(p => p.AlunoId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne<Turma>()
                 .WithMany()
                 .HasForeignKey(p => p.TurmaId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

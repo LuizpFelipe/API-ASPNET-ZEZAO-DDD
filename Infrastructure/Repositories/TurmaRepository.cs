@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Domain.Entities;
+﻿using Domain.Entities;
 using Domain.Interfaces;
 using Infrastructure.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories
 {
@@ -58,6 +54,12 @@ namespace Infrastructure.Repositories
         {
             _context.Turmas.Remove(turma);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> PossuiVinculosAsync(Guid turmaId)
+        {
+            return await _context.Set<Aluno>().AnyAsync(a => a.TurmaId == turmaId)
+                || await _context.Set<Presenca>().AnyAsync(p => p.TurmaId == turmaId);
         }
     }
 }

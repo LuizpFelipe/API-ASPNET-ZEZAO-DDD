@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Domain.Entities;
 
 namespace Infrastructure.Persistence
 {
@@ -12,6 +12,10 @@ namespace Infrastructure.Persistence
             builder.Property(p => p.Nome).IsRequired().HasMaxLength(150);
             builder.Property(p => p.Telefone).HasMaxLength(20);
 
+            builder.HasOne<Usuario>()
+                   .WithMany()
+                   .HasForeignKey(professor => professor.UsuarioId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

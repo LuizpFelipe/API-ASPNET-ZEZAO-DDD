@@ -2,7 +2,6 @@
 using Application.Request;
 using Application.Response;
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Interfaces;
 
 namespace Application.Services;
@@ -10,15 +9,18 @@ namespace Application.Services;
 public class AlunoService : IAlunoService
 {
     private readonly IAlunoRepository _alunoRepository;
-    private readonly ICategoriaRepository _categoriaRepository; 
+    private readonly ICategoriaRepository _categoriaRepository;
+    private readonly ITurmaRepository _turmaRepository;
     private readonly IContratoService _contratoService;
     private readonly IUnitOfWork _unitOfWork;
 
     public AlunoService(IAlunoRepository alunoRepository, ICategoriaRepository categoriaRepository,
+                        ITurmaRepository turmaRepository,
                         IContratoService contratoService, IUnitOfWork unitOfWork)
     {
         _alunoRepository = alunoRepository;
         _categoriaRepository = categoriaRepository;
+        _turmaRepository = turmaRepository;
         _contratoService = contratoService;
         _unitOfWork = unitOfWork;
     }
@@ -29,6 +31,11 @@ public class AlunoService : IAlunoService
         if (existe)
         {
             return new AlunoResponseDTO { Status = false, Message = "Aluno já cadastrado no sistema." };
+        }
+
+        if (await _turmaRepository.ObterPorIdAsync(dto.TurmaId) == null)
+        {
+            return new AlunoResponseDTO { Status = false, Message = "Turma não encontrada." };
         }
 
         int idade = CalcularIdade(dto.DataNascimento);
@@ -64,6 +71,11 @@ public class AlunoService : IAlunoService
 
         var existe = await _alunoRepository.ExisteComMesmoNomeEDataNascimentoAsync(dto.NomeCompleto, dto.DataNascimento, id);
         if (existe) return new AlunoResponseDTO { Status = false, Message = "Outro aluno já possui este nome e data de nascimento." };
+
+        if (await _turmaRepository.ObterPorIdAsync(dto.TurmaId) == null)
+        {
+            return new AlunoResponseDTO { Status = false, Message = "Turma não encontrada." };
+        }
 
         int idade = CalcularIdade(dto.DataNascimento);
         var categoria = await _categoriaRepository.ObterPorIdadeAsync(idade);

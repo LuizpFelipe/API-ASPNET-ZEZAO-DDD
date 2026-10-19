@@ -10,5 +10,6 @@ namespace Domain.Interfaces
         Task<Usuario?> ObterPorEmailAsync(string email);
         Task<IEnumerable<Usuario>> ObterPorIdsAsync(IEnumerable<Guid> ids);
         Task AtualizarAsync(Usuario usuario);
+        Task RemoverAsync(Usuario usuario);
     }
 }

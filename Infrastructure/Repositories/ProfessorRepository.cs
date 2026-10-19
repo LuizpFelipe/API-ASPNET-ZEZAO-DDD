@@ -1,6 +1,6 @@
 ﻿using Domain.Entities;
 using Domain.Interfaces;
-using Infrastructure.Context; // Certifique-se de que o namespace do seu DbContext está correto
+using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories
@@ -9,7 +9,6 @@ namespace Infrastructure.Repositories
     {
         private readonly AppDbContext _context;
 
-        // Injeção do DbContext via construtor
         public ProfessorRepository(AppDbContext context)
         {
             _context = context;
@@ -41,6 +40,11 @@ namespace Infrastructure.Repositories
         {
             _context.Professores.Remove(professor);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> PossuiTurmasAsync(Guid professorId)
+        {
+            return await _context.Turmas.AnyAsync(t => t.ProfessorId == professorId);
         }
     }
 }

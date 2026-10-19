@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Application.Interfaces;
 using Application.Request;
 using Application.Response;
@@ -95,6 +91,15 @@ namespace Application.Services
             if (categoria == null)
             {
                 return new CategoriaResponseDTO { Status = false, Message = "Categoria não encontrada." };
+            }
+
+            if (await _repository.PossuiVinculosAsync(id))
+            {
+                return new CategoriaResponseDTO
+                {
+                    Status = false,
+                    Message = "Não é possível remover a categoria: existem alunos, turmas ou campeonatos vinculados a ela."
+                };
             }
 
             await _repository.RemoverAsync(categoria);

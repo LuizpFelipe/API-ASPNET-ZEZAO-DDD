@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Domain.Entities;
 
 namespace Domain.Interfaces
@@ -14,5 +11,6 @@ namespace Domain.Interfaces
         Task AdicionarAsync(Categoria categoria);
         Task AtualizarAsync(Categoria categoria);
         Task RemoverAsync(Categoria categoria);
+        Task<bool> PossuiVinculosAsync(Guid categoriaId);
     }
 }

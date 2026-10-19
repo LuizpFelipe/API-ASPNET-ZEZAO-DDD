@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Domain.Entities;
+﻿using Domain.Entities;
 
 namespace Domain.Interfaces
 {
@@ -14,5 +11,6 @@ namespace Domain.Interfaces
         Task AdicionarAsync(Turma turma);
         Task AtualizarAsync(Turma turma);
         Task RemoverAsync(Turma turma);
+        Task<bool> PossuiVinculosAsync(Guid turmaId);
     }
 }
