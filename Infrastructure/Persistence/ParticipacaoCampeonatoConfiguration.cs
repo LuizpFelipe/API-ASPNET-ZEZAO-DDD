@@ -18,12 +18,14 @@ namespace Infrastructure.Persistence
             builder.HasOne<Campeonato>()
                 .WithMany()
                 .HasForeignKey(p => p.CampeonatoId)
-                .IsRequired();
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne<Aluno>()
                 .WithMany()
                 .HasForeignKey(p => p.AlunoId)
-                .IsRequired();
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

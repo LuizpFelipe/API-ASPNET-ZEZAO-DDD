@@ -127,7 +127,15 @@ namespace Application.Services
             var professor = await _professorRepository.ObterPorIdAsync(id);
             if (professor == null) return Falha("Professor não encontrado");
 
+            if (await _professorRepository.PossuiTurmasAsync(professor.Id))
+                return Falha("Não é possível remover o professor: existem turmas vinculadas a ele.");
+
+            var usuario = await _usuarioRepository.ObterPorIdAsync(professor.UsuarioId);
+
             await _professorRepository.RemoverAsync(professor);
+
+            if (usuario != null)
+                await _usuarioRepository.RemoverAsync(usuario);
 
             return new ProfessorResponseDTO { Status = true, Message = "Removido com sucesso" };
         }

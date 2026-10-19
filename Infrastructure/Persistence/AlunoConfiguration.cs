@@ -11,5 +11,15 @@ public class AlunoConfiguration : IEntityTypeConfiguration<Aluno>
         builder.HasKey(a => a.Id);
 
         builder.HasIndex(a => new { a.NomeCompleto, a.DataNascimento }).IsUnique();
+
+        builder.HasOne(aluno => aluno.Categoria)
+               .WithMany()
+               .HasForeignKey(aluno => aluno.CategoriaId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<Turma>()
+               .WithMany()
+               .HasForeignKey(aluno => aluno.TurmaId)
+               .OnDelete(DeleteBehavior.Restrict);
     }
 }

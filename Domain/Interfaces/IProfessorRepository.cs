@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Domain.Entities;
+﻿using Domain.Entities;
 
 namespace Domain.Interfaces
 {
@@ -12,5 +9,6 @@ namespace Domain.Interfaces
         Task AdicionarAsync(Professor professor);
         Task AtualizarAsync(Professor professor);
         Task RemoverAsync(Professor professor);
+        Task<bool> PossuiTurmasAsync(Guid professorId);
     }
 }

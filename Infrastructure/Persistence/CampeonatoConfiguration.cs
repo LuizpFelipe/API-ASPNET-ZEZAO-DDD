@@ -19,7 +19,8 @@ namespace Infrastructure.Persistence
             builder.HasOne<Categoria>()
                 .WithMany()
                 .HasForeignKey(c => c.CategoriaId)
-                .IsRequired();
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

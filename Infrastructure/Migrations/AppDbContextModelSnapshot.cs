@@ -69,6 +69,8 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("CategoriaId");
 
+                    b.HasIndex("TurmaId");
+
                     b.HasIndex("NomeCompleto", "DataNascimento")
                         .IsUnique();
 
@@ -291,6 +293,8 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UsuarioId");
+
                     b.ToTable("Professor", (string)null);
                 });
 
@@ -322,6 +326,10 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.HasIndex("ProfessorId");
 
                     b.ToTable("Turma", (string)null);
                 });
@@ -391,7 +399,13 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Categoria", "Categoria")
                         .WithMany()
                         .HasForeignKey("CategoriaId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Turma", null)
+                        .WithMany()
+                        .HasForeignKey("TurmaId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Categoria");
@@ -402,7 +416,7 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Categoria", null)
                         .WithMany()
                         .HasForeignKey("CategoriaId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -440,7 +454,7 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Aluno", null)
                         .WithMany()
                         .HasForeignKey("AlunoId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Campeonato", null)
@@ -455,13 +469,37 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Aluno", null)
                         .WithMany()
                         .HasForeignKey("AlunoId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Turma", null)
                         .WithMany()
                         .HasForeignKey("TurmaId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.Professor", b =>
+                {
+                    b.HasOne("Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.Turma", b =>
+                {
+                    b.HasOne("Domain.Entities.Categoria", null)
+                        .WithMany()
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Professor", null)
+                        .WithMany()
+                        .HasForeignKey("ProfessorId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 #pragma warning restore 612, 618
