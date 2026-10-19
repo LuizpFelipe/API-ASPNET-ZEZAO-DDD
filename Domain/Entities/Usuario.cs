@@ -28,14 +28,17 @@ namespace Domain.Entities
             Email = NormalizarEmail(novoEmail);
         }
 
+        public static bool TentarNormalizarEmail(string? email, out string emailNormalizado)
+        {
+            emailNormalizado = (email ?? string.Empty).Trim().ToLowerInvariant();
+
+            return System.Net.Mail.MailAddress.TryCreate(emailNormalizado, out var enderecoDeEmail)
+                   && enderecoDeEmail.Address == emailNormalizado;
+        }
+
         private static string NormalizarEmail(string email)
         {
-            var emailNormalizado = (email ?? string.Empty).Trim().ToLowerInvariant();
-
-            var emailEhValido = System.Net.Mail.MailAddress.TryCreate(emailNormalizado, out var enderecoDeEmail)
-                                && enderecoDeEmail.Address == emailNormalizado;
-
-            if (!emailEhValido)
+            if (!TentarNormalizarEmail(email, out var emailNormalizado))
             {
                 throw new ArgumentException("E-mail inválido.", nameof(email));
             }
