@@ -63,6 +63,9 @@ builder.Services.AddScoped<ICampeonatoService, CampeonatoService>();
 builder.Services.AddScoped<IPresencaRepository, PresencaRepository>();
 builder.Services.AddScoped<IPresencaService, PresencaService>();
 
+builder.Services.AddScoped<IReposicaoRepository, ReposicaoRepository>();
+builder.Services.AddScoped<IReposicaoService, ReposicaoService>();
+
 builder.Services.AddSingleton(builder.Configuration.GetSection("Contrato").Get<ConfiguracoesContrato>()
     ?? throw new InvalidOperationException("Configuração 'Contrato' não encontrada em appsettings."));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();

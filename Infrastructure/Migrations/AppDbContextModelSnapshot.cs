@@ -340,6 +340,41 @@ namespace Infrastructure.Migrations
                     b.ToTable("Professor", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Reposicao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlunoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("DataOriginal")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("DataRegistro")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("DataReposicao")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("TurmaDestinoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TurmaOrigemId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlunoId");
+
+                    b.HasIndex("TurmaDestinoId");
+
+                    b.HasIndex("TurmaOrigemId");
+
+                    b.ToTable("Reposicoes", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Turma", b =>
                 {
                     b.Property<Guid>("Id")
@@ -535,6 +570,27 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Usuario", null)
                         .WithMany()
                         .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.Reposicao", b =>
+                {
+                    b.HasOne("Domain.Entities.Aluno", null)
+                        .WithMany()
+                        .HasForeignKey("AlunoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Turma", null)
+                        .WithMany()
+                        .HasForeignKey("TurmaDestinoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Turma", null)
+                        .WithMany()
+                        .HasForeignKey("TurmaOrigemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
