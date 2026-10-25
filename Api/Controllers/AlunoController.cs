@@ -1,5 +1,7 @@
-﻿using Application.Interfaces;
+﻿using Api.Utilitarios;
+using Application.Interfaces;
 using Application.Request;
+using Application.Response;
 using Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +10,6 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-//[Authorize(Roles = "Coordenador")] 
 public class AlunosController : ControllerBase
 {
     private readonly IAlunoService _alunoService;
@@ -20,12 +21,14 @@ public class AlunosController : ControllerBase
         _armazenamentoService = armazenamentoService;
     }
 
+
     [HttpGet]
     public async Task<IActionResult> Get()
     {
         var result = await _alunoService.ListarAsync();
         return Ok(result);
     }
+
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id)
@@ -35,14 +38,18 @@ public class AlunosController : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "Coordenador")]
     [HttpPost]
     public async Task<IActionResult> Post([FromForm] CriarAlunoRequestDTO dto, IFormFile? foto)
     {
+        var erroDaFoto = ValidadorDeFoto.Validar(foto);
+        if (erroDaFoto != null)
+            return BadRequest(new AlunoResponseDTO { Status = false, Message = erroDaFoto });
+
         if (foto != null && foto.Length > 0)
         {
-            var nomeArquivo = $"{Guid.NewGuid()}{Path.GetExtension(foto.FileName)}";
             using var stream = foto.OpenReadStream();
-            dto.FotoUrl = await _armazenamentoService.SalvarAsync(stream, nomeArquivo);
+            dto.FotoUrl = await _armazenamentoService.SalvarAsync(stream, ValidadorDeFoto.NomeSeguro(foto));
         }
 
         var result = await _alunoService.CriarAsync(dto);
@@ -51,14 +58,18 @@ public class AlunosController : ControllerBase
         return Created("", result);
     }
 
+    [Authorize(Roles = "Coordenador")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Put(Guid id, [FromForm] AtualizarAlunoRequestDTO dto, IFormFile? foto)
     {
+        var erroDaFoto = ValidadorDeFoto.Validar(foto);
+        if (erroDaFoto != null)
+            return BadRequest(new AlunoResponseDTO { Status = false, Message = erroDaFoto });
+
         if (foto != null && foto.Length > 0)
         {
-            var nomeArquivo = $"{Guid.NewGuid()}{Path.GetExtension(foto.FileName)}";
             using var stream = foto.OpenReadStream();
-            dto.FotoUrl = await _armazenamentoService.SalvarAsync(stream, nomeArquivo);
+            dto.FotoUrl = await _armazenamentoService.SalvarAsync(stream, ValidadorDeFoto.NomeSeguro(foto));
         }
 
         var result = await _alunoService.AtualizarAsync(id, dto);
@@ -67,6 +78,7 @@ public class AlunosController : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "Coordenador")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {

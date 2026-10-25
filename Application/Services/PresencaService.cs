@@ -82,11 +82,11 @@ namespace Application.Services
             if (data == null)
                 return Falha("Informe a data da chamada. Exemplo: ?data=2026-09-26", TipoFalhaPresenca.Invalido);
 
-            var alunos = (await _presencaRepository.ObterAlunosDaTurmaAsync(turmaId)).ToList();
+            var (alunos, idsEmReposicao) = await ObterAlunosDaChamadaAsync(turmaId, data.Value);
             var presencas = await _presencaRepository.ObterPresencasAsync(turmaId, data.Value);
 
             var (podeEditar, motivo) = AvaliarEdicao(turma!, data.Value, ehCoordenador);
-            var chamada = MontarChamada(turma!, data.Value, alunos, presencas, podeEditar, motivo);
+            var chamada = MontarChamada(turma!, data.Value, alunos, presencas, podeEditar, motivo, idsEmReposicao);
 
             string mensagem;
             if (chamada.Alunos.Count == 0)
@@ -117,10 +117,10 @@ namespace Application.Services
             if (dto.Presencas.GroupBy(p => p.AlunoId).Any(g => g.Count() > 1))
                 return Falha("Há aluno repetido na lista de presenças.", TipoFalhaPresenca.Invalido);
 
-            var alunos = (await _presencaRepository.ObterAlunosDaTurmaAsync(turmaId)).ToList();
-            var idsDaTurma = alunos.Select(a => a.Id).ToHashSet();
+            var (alunos, idsEmReposicao) = await ObterAlunosDaChamadaAsync(turmaId, dto.Data);
+            var idsDaChamada = alunos.Select(a => a.Id).ToHashSet();
 
-            if (dto.Presencas.Any(p => !idsDaTurma.Contains(p.AlunoId)))
+            if (dto.Presencas.Any(p => !idsDaChamada.Contains(p.AlunoId)))
                 return Falha("Há aluno na lista que não pertence a esta turma ou está inativo.", TipoFalhaPresenca.Invalido);
 
             var existentes = await _presencaRepository.ObterPresencasAsync(turmaId, dto.Data);
@@ -145,7 +145,7 @@ namespace Application.Services
             var acao = novas.Count == 0 ? "atualizada" : "registrada";
             var mensagem = $"Chamada {acao}: {Plural(presentes, "presente", "presentes")} e {Plural(ausentes, "ausente", "ausentes")}.";
 
-            return Sucesso(mensagem, MontarChamada(turma!, dto.Data, alunos, existentes, true, null));
+            return Sucesso(mensagem, MontarChamada(turma!, dto.Data, alunos, existentes, true, null, idsEmReposicao));
         }
 
         public async Task<ChamadaMensalResponseDTO> ObterChamadaMensalAsync(Guid turmaId, string? mes, string nomeUsuario, bool ehCoordenador)
@@ -205,6 +205,23 @@ namespace Application.Services
             return new ChamadaMensalResponseDTO { Status = true, Message = mensagem, Data = data };
         }
 
+        private async Task<(List<Aluno> alunos, HashSet<Guid> idsEmReposicao)> ObterAlunosDaChamadaAsync(Guid turmaId, DateOnly data)
+        {
+            var alunos = (await _presencaRepository.ObterAlunosDaTurmaAsync(turmaId)).ToList();
+            var alunosEmReposicao = await _presencaRepository.ObterAlunosEmReposicaoAsync(turmaId, data) ?? new List<Aluno>();
+            var idsEmReposicao = new HashSet<Guid>();
+
+            foreach (var aluno in alunosEmReposicao)
+            {
+                if (alunos.Any(existente => existente.Id == aluno.Id)) continue;
+
+                alunos.Add(aluno);
+                idsEmReposicao.Add(aluno.Id);
+            }
+
+            return (alunos, idsEmReposicao);
+        }
+
         private async Task<(Turma? turma, ChamadaResponseDTO? erro)> ValidarAcessoAsync(Guid turmaId, string nomeUsuario, bool ehCoordenador)
         {
             var turma = await _presencaRepository.ObterTurmaPorIdAsync(turmaId);
@@ -238,7 +255,8 @@ namespace Application.Services
             return (true, null);
         }
 
-        private static ChamadaDataDTO MontarChamada(Turma turma, DateOnly data, List<Aluno> alunos, List<Presenca> presencas, bool podeEditar, string? motivoSomenteLeitura)
+        private static ChamadaDataDTO MontarChamada(Turma turma, DateOnly data, List<Aluno> alunos, List<Presenca> presencas,
+            bool podeEditar, string? motivoSomenteLeitura, HashSet<Guid> idsEmReposicao)
         {
             var presentePorAluno = presencas
                 .GroupBy(p => p.AlunoId)
@@ -258,6 +276,7 @@ namespace Application.Services
                     FotoUrl = a.FotoUrl,
                     NivelTecnico = a.NivelTecnico.ToString(),
                     EhInadimplente = a.Status == StatusAluno.Inadimplente,
+                    EhReposicao = idsEmReposicao.Contains(a.Id),
                     Presente = presentePorAluno.TryGetValue(a.Id, out var presente) ? presente : (bool?)null
                 }).ToList()
             };

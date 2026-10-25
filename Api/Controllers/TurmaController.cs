@@ -1,15 +1,12 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using Application.Interfaces;
+using Application.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Application.Interfaces;
-using Application.Request;
 
 namespace Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize(Roles = "Coordenador")]
     public class TurmasController : ControllerBase
     {
         private readonly ITurmaService _turmaService;
@@ -41,14 +38,16 @@ namespace Api.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "Coordenador")]
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CriarTurmaRequestDTO dto)
         {
             var result = await _turmaService.CriarAsync(dto);
-            if (!result.Status) return BadRequest(result); 
+            if (!result.Status) return BadRequest(result);
             return Ok(result);
         }
 
+        [Authorize(Roles = "Coordenador")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(Guid id, [FromBody] AtualizarTurmaRequestDTO dto)
         {
@@ -57,6 +56,7 @@ namespace Api.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "Coordenador")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {

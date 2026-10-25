@@ -15,5 +15,6 @@ namespace Domain.Interfaces
 
         Task SalvarChamadaAsync(IEnumerable<Presenca> novasPresencas);
         Task<List<Presenca>> ObterPresencasDoMesAsync(Guid turmaId, DateOnly inicio, DateOnly fim);
+        Task<List<Aluno>> ObterAlunosEmReposicaoAsync(Guid turmaDestinoId, DateOnly data);
     }
 }

@@ -15,15 +15,21 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var origensPermitidas = builder.Configuration.GetSection("Cors:Origens").Get<string[]>() ?? Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod());
+    options.AddPolicy("PoliticaDoFront", policy =>
+    {
+        if (origensPermitidas.Length > 0)
+            policy.WithOrigins(origensPermitidas).AllowAnyHeader().AllowAnyMethod();
+        else
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    });
 });
 
 builder.Services.AddControllers();
@@ -37,8 +43,6 @@ builder.Services.AddScoped<ICodigoRecuperacaoSenhaRepository, CodigoRecuperacaoS
 builder.Services.AddScoped<IRecuperacaoSenhaService, RecuperacaoSenhaService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 
-builder.Services.AddScoped<IUserServices, UserService>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISecurityService, BCryptoSecurityService>();
 builder.Services.AddScoped<IProfessorService, ProfessorService>();
 builder.Services.AddScoped<IProfessorRepository, ProfessorRepository>();
@@ -85,8 +89,26 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
-var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Configuração 'Jwt:Key' não encontrada em appsettings.");
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+{
+    throw new InvalidOperationException(
+        "Configure Jwt:Key com pelo menos 32 caracteres (user-secrets ou variável de ambiente Jwt__Key).");
+}
+
+builder.Services.AddRateLimiter(opcoes =>
+{
+    opcoes.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    opcoes.AddPolicy("autenticacao", contextoHttp =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            contextoHttp.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -126,22 +148,31 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
 
+if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Seed:Habilitado"))
+{
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var securityService = scope.ServiceProvider.GetRequiredService<ISecurityService>();
 
     var emailDoCoordenador = builder.Configuration["UsuariosIniciais:EmailDoCoordenador"]
         ?? throw new InvalidOperationException("Configure UsuariosIniciais:EmailDoCoordenador.");
-    var emailDoProfessor = builder.Configuration["UsuariosIniciais:EmailDoProfessor"]
-        ?? throw new InvalidOperationException("Configure UsuariosIniciais:EmailDoProfessor.");
+    var emailDoProfessorDeExemplo = app.Environment.IsDevelopment()
+        ? builder.Configuration["UsuariosIniciais:EmailDoProfessor"]
+        : null;
+    var senhaInicial = builder.Configuration["UsuariosIniciais:SenhaInicial"]
+        ?? (app.Environment.IsDevelopment()
+            ? "user123"
+            : throw new InvalidOperationException("Configure UsuariosIniciais:SenhaInicial."));
 
-    UsuarioSeeder.Seed(dbContext, securityService, emailDoCoordenador, emailDoProfessor);
+    UsuarioSeeder.Seed(dbContext, securityService, emailDoCoordenador, emailDoProfessorDeExemplo, senhaInicial);
     await CategoriaSeeder.SeedAsync(dbContext);
 }
 
-
-app.UseCors("AllowAll");
+app.UseStaticFiles();
+app.UseCors("PoliticaDoFront");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

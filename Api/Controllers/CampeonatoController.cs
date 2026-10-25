@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using Application.Interfaces;
 using Application.Request;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +7,6 @@ namespace Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize(Roles = "Coordenador")]
     public class CampeonatosController : ControllerBase
     {
         private readonly ICampeonatoService _campeonatoService;
@@ -34,6 +31,7 @@ namespace Api.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = "Coordenador")]
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CriarCampeonatoRequestDTO dto)
         {
@@ -42,6 +40,7 @@ namespace Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = response.Data?.Id }, response);
         }
 
+        [Authorize(Roles = "Coordenador")]
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Put(Guid id, [FromBody] AtualizarCampeonatoRequestDTO dto)
         {
@@ -50,6 +49,7 @@ namespace Api.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = "Coordenador")]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {

@@ -7,7 +7,8 @@ namespace Infrastructure.Persistence
 {
     public static class UsuarioSeeder
     {
-        public static void Seed(AppDbContext context, ISecurityService securityService, string emailDoCoordenador, string emailDoProfessor)
+        public static void Seed(AppDbContext context, ISecurityService securityService,
+            string emailDoCoordenador, string? emailDoProfessorDeExemplo, string senhaInicial)
         {
             if (context.Usuarios.Any())
             {
@@ -17,18 +18,22 @@ namespace Infrastructure.Persistence
             var coordenador = new Usuario(
                 "coordenacao",
                 emailDoCoordenador,
-                securityService.HashPassword("user123"),
+                securityService.HashPassword(senhaInicial),
                 PerfilUsuario.Coordenador
             );
+            context.Usuarios.Add(coordenador);
 
-            var professor = new Usuario(
-                "professor",
-                emailDoProfessor,
-                securityService.HashPassword("user123"),
-                PerfilUsuario.Professor
-            );
+            if (!string.IsNullOrWhiteSpace(emailDoProfessorDeExemplo))
+            {
+                var professorDeExemplo = new Usuario(
+                    "professor",
+                    emailDoProfessorDeExemplo,
+                    securityService.HashPassword(senhaInicial),
+                    PerfilUsuario.Professor
+                );
+                context.Usuarios.Add(professorDeExemplo);
+            }
 
-            context.Usuarios.AddRange(coordenador, professor);
             context.SaveChanges();
         }
     }
