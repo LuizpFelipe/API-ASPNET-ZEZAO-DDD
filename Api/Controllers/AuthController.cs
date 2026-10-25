@@ -2,6 +2,7 @@
 using Application.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Api.Controllers
 {
@@ -23,6 +24,7 @@ namespace Api.Controllers
             _logger = logger;
         }
 
+        [EnableRateLimiting("autenticacao")]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO loginRequestDTO)
         {
@@ -46,6 +48,7 @@ namespace Api.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("autenticacao")]
         [HttpPost("recuperar-senha")]
         public async Task<IActionResult> RecuperarSenha([FromBody] SolicitarRecuperacaoSenhaRequestDTO dto)
         {
@@ -55,6 +58,7 @@ namespace Api.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("autenticacao")]
         [HttpPost("validar-codigo")]
         public async Task<IActionResult> ValidarCodigo([FromBody] ValidarCodigoRecuperacaoRequestDTO dto)
         {
@@ -64,6 +68,7 @@ namespace Api.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("autenticacao")]
         [HttpPost("redefinir-senha")]
         public async Task<IActionResult> RedefinirSenha([FromBody] RedefinirSenhaRequestDTO dto)
         {

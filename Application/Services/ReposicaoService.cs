@@ -1,11 +1,12 @@
-using System.Globalization;
-using System.Text;
-using System.Text.RegularExpressions;
 using Application.Interfaces;
 using Application.Request;
 using Application.Response;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Application.Services;
 
@@ -27,12 +28,15 @@ public class ReposicaoService : IReposicaoService
     private readonly IReposicaoRepository _reposicaoRepository;
     private readonly IAlunoRepository _alunoRepository;
     private readonly ITurmaRepository _turmaRepository;
+    private readonly IRelogio _relogio;
 
-    public ReposicaoService(IReposicaoRepository reposicaoRepository, IAlunoRepository alunoRepository, ITurmaRepository turmaRepository)
+    public ReposicaoService(IReposicaoRepository reposicaoRepository, IAlunoRepository alunoRepository,
+                            ITurmaRepository turmaRepository, IRelogio relogio)
     {
         _reposicaoRepository = reposicaoRepository;
         _alunoRepository = alunoRepository;
         _turmaRepository = turmaRepository;
+        _relogio = relogio;
     }
 
     public async Task<ReposicaoResponseDTO> ListarAsync()
@@ -43,7 +47,8 @@ public class ReposicaoService : IReposicaoService
 
     public async Task<ReposicaoResponseDTO> RegistrarAsync(RegistrarReposicaoRequestDTO dto)
     {
-        if (await _alunoRepository.ObterPorIdAsync(dto.AlunoId) == null)
+        var aluno = await _alunoRepository.ObterPorIdAsync(dto.AlunoId);
+        if (aluno == null || aluno.Status == StatusAluno.Inativo)
             return Falha("Aluno não encontrado.");
 
         var turmaOrigem = await _turmaRepository.ObterPorIdAsync(dto.TurmaOrigemId);
@@ -53,6 +58,13 @@ public class ReposicaoService : IReposicaoService
         var turmaDestino = await _turmaRepository.ObterPorIdAsync(dto.TurmaDestinoId);
         if (turmaDestino == null)
             return Falha("Turma de destino não encontrada.");
+
+        // O aluno precisa ser da turma de origem e a aula perdida precisa ter existido nessa data
+        if (aluno.TurmaId != turmaOrigem.Id)
+            return Falha("O aluno não pertence à turma de origem.");
+
+        if (!turmaOrigem.TemAulaEm(dto.DataOriginal))
+            return Falha("A turma de origem não tem aula na data informada.");
 
         // Regra 1: mesma categoria e turma diferente da origem
         if (turmaDestino.Id == turmaOrigem.Id || turmaDestino.CategoriaId != turmaOrigem.CategoriaId)
@@ -70,13 +82,13 @@ public class ReposicaoService : IReposicaoService
         if (!diasDaTurma.Contains(dto.DataReposicao.DayOfWeek))
             return Falha("A turma de destino não tem aula no dia da semana da data de reposição.");
 
-        // Regra 3: aviso mínimo de 24h
+        // Regra 3: aviso mínimo de 24h, no horário do Brasil
         var horario = LerHorario(turmaDestino.Horario);
         if (horario == null)
             return Falha("Não foi possível interpretar o horário da turma de destino.");
 
         var dataHoraAula = dto.DataReposicao.ToDateTime(horario.Value);
-        if (dataHoraAula < DateTime.Now.AddHours(HorasMinimasAviso))
+        if (dataHoraAula < _relogio.AgoraNoBrasil().AddHours(HorasMinimasAviso))
             return Falha($"A reposição precisa ser registrada com pelo menos {HorasMinimasAviso}h de antecedência da aula de destino.");
 
         if (await _reposicaoRepository.ExisteReposicaoNoMesmoDiaAsync(dto.AlunoId, dto.DataOriginal))

@@ -37,7 +37,7 @@ namespace Application.Response
         public string? FotoUrl { get; set; }
         public string NivelTecnico { get; set; } = string.Empty;
         public bool EhInadimplente { get; set; }
-
         public bool? Presente { get; set; }
+        public bool EhReposicao { get; set; }
     }
 }

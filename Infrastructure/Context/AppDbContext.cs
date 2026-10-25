@@ -10,7 +10,6 @@ namespace Infrastructure.Context
         {
         }
 
-        public DbSet<User> Users => Set<User>();
         public DbSet<Professor> Professores => Set<Professor>();
         public DbSet<Turma> Turmas => Set<Turma>();
         public DbSet<Usuario> Usuarios => Set<Usuario>();

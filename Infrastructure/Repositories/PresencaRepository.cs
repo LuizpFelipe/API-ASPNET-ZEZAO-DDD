@@ -72,5 +72,17 @@ namespace Infrastructure.Repositories
             await _context.Set<Presenca>().AddRangeAsync(novasPresencas);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<List<Aluno>> ObterAlunosEmReposicaoAsync(Guid turmaDestinoId, DateOnly data)
+        {
+            return await (from reposicao in _context.Reposicoes
+                          join aluno in _context.Set<Aluno>() on reposicao.AlunoId equals aluno.Id
+                          where reposicao.TurmaDestinoId == turmaDestinoId
+                                && reposicao.DataReposicao == data
+                                && aluno.Status != StatusAluno.Inativo
+                          select aluno)
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 }

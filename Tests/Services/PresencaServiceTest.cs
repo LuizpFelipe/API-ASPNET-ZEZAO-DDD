@@ -29,6 +29,7 @@ public class PresencaServiceTest
         _presencaRepository.ObterAlunosDaTurmaAsync(_turma.Id).Returns(new List<Aluno>());
         _presencaRepository.ObterPresencasAsync(_turma.Id, Arg.Any<DateOnly>()).Returns(new List<Presenca>());
         _presencaRepository.ObterPresencasDoMesAsync(_turma.Id, Arg.Any<DateOnly>(), Arg.Any<DateOnly>()).Returns(new List<Presenca>());
+        _presencaRepository.ObterAlunosEmReposicaoAsync(Arg.Any<Guid>(), Arg.Any<DateOnly>()).Returns(new List<Aluno>());
 
         _service = new PresencaService(_presencaRepository, _relogio, new ConfiguracoesPresenca { DiasLimiteEdicaoProfessor = 10 });
     }

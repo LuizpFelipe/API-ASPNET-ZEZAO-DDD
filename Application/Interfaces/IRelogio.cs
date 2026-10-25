@@ -3,4 +3,6 @@
 public interface IRelogio
 {
     DateOnly HojeNoBrasil();
+
+    DateTime AgoraNoBrasil();
 }
