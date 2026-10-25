@@ -53,9 +53,17 @@ namespace Infrastructure.Repositories
 
         public async Task<List<Presenca>> ObterPresencasAsync(Guid turmaId, DateOnly data)
         {
-            
+
             return await _context.Set<Presenca>()
                 .Where(p => p.TurmaId == turmaId && p.Data == data)
+                .ToListAsync();
+        }
+
+        public async Task<List<Presenca>> ObterPresencasDoMesAsync(Guid turmaId, DateOnly inicio, DateOnly fim)
+        {
+            return await _context.Set<Presenca>()
+                .AsNoTracking()
+                .Where(p => p.TurmaId == turmaId && p.Data >= inicio && p.Data <= fim)
                 .ToListAsync();
         }
 
@@ -63,6 +71,18 @@ namespace Infrastructure.Repositories
         {
             await _context.Set<Presenca>().AddRangeAsync(novasPresencas);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<Aluno>> ObterAlunosEmReposicaoAsync(Guid turmaDestinoId, DateOnly data)
+        {
+            return await (from reposicao in _context.Reposicoes
+                          join aluno in _context.Set<Aluno>() on reposicao.AlunoId equals aluno.Id
+                          where reposicao.TurmaDestinoId == turmaDestinoId
+                                && reposicao.DataReposicao == data
+                                && aluno.Status != StatusAluno.Inativo
+                          select aluno)
+                .AsNoTracking()
+                .ToListAsync();
         }
     }
 }

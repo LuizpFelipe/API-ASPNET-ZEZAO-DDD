@@ -12,4 +12,5 @@ public class AtualizarAlunoRequestDTO
     public string Endereco { get; set; } = string.Empty;
     public Guid TurmaId { get; set; }
     public string? FotoUrl { get; set; }
+    public string ResponsavelCpf { get; set; } = string.Empty;
 }

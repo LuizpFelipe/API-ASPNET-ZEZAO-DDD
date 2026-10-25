@@ -51,6 +51,10 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ResponsavelCpf")
+                        .HasMaxLength(11)
+                        .HasColumnType("character varying(11)");
+
                     b.Property<string>("ResponsavelNome")
                         .IsRequired()
                         .HasColumnType("text");
@@ -340,6 +344,41 @@ namespace Infrastructure.Migrations
                     b.ToTable("Professor", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Reposicao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlunoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("DataOriginal")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("DataRegistro")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("DataReposicao")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("TurmaDestinoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TurmaOrigemId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlunoId");
+
+                    b.HasIndex("TurmaDestinoId");
+
+                    b.HasIndex("TurmaOrigemId");
+
+                    b.ToTable("Reposicoes", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Turma", b =>
                 {
                     b.Property<Guid>("Id")
@@ -374,31 +413,6 @@ namespace Infrastructure.Migrations
                     b.HasIndex("ProfessorId");
 
                     b.ToTable("Turma", (string)null);
-                });
-
-            modelBuilder.Entity("Domain.Entities.User", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Usuario", b =>
@@ -535,6 +549,27 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Usuario", null)
                         .WithMany()
                         .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.Reposicao", b =>
+                {
+                    b.HasOne("Domain.Entities.Aluno", null)
+                        .WithMany()
+                        .HasForeignKey("AlunoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Turma", null)
+                        .WithMany()
+                        .HasForeignKey("TurmaDestinoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Turma", null)
+                        .WithMany()
+                        .HasForeignKey("TurmaOrigemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
