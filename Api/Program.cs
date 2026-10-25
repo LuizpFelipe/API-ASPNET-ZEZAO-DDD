@@ -68,6 +68,9 @@ builder.Services.AddSingleton<IRelogio, RelogioBrasil>();
 builder.Services.AddSingleton(builder.Configuration.GetSection("Presenca").Get<ConfiguracoesPresenca>()
     ?? new ConfiguracoesPresenca());
 
+builder.Services.AddScoped<IReposicaoRepository, ReposicaoRepository>();
+builder.Services.AddScoped<IReposicaoService, ReposicaoService>();
+
 builder.Services.AddSingleton(builder.Configuration.GetSection("Contrato").Get<ConfiguracoesContrato>()
     ?? throw new InvalidOperationException("Configuração 'Contrato' não encontrada em appsettings."));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
