@@ -29,4 +29,9 @@ public class RelogioBrasil : IRelogio
 
         return TimeZoneInfo.CreateCustomTimeZone("Brasilia", TimeSpan.FromHours(-3), "Brasília", "Brasília");
     }
+
+    public DateTime AgoraNoBrasil()
+    {
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, FusoDoBrasil);
+    }
 }
