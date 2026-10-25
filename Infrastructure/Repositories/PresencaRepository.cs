@@ -53,9 +53,17 @@ namespace Infrastructure.Repositories
 
         public async Task<List<Presenca>> ObterPresencasAsync(Guid turmaId, DateOnly data)
         {
-            
+
             return await _context.Set<Presenca>()
                 .Where(p => p.TurmaId == turmaId && p.Data == data)
+                .ToListAsync();
+        }
+
+        public async Task<List<Presenca>> ObterPresencasDoMesAsync(Guid turmaId, DateOnly inicio, DateOnly fim)
+        {
+            return await _context.Set<Presenca>()
+                .AsNoTracking()
+                .Where(p => p.TurmaId == turmaId && p.Data >= inicio && p.Data <= fim)
                 .ToListAsync();
         }
 

@@ -1,4 +1,4 @@
-﻿using System;
+﻿using Domain.Utilitarios;
 
 namespace Domain.Entities
 {
@@ -21,6 +21,11 @@ namespace Domain.Entities
             ProfessorId = professorId;
         }
 
+        public bool TemAulaEm(DateOnly data)
+        {
+            return DiasDaSemana.Converter(DiasSemana).Contains(data.DayOfWeek);
+        }
+
         public void AtualizarDetalhes(string nome, string diasSemana, string horario, Guid categoriaId, Guid professorId)
         {
             Nome = nome;
@@ -29,5 +34,7 @@ namespace Domain.Entities
             CategoriaId = categoriaId;
             ProfessorId = professorId;
         }
+
+
     }
 }

@@ -51,6 +51,10 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ResponsavelCpf")
+                        .HasMaxLength(11)
+                        .HasColumnType("character varying(11)");
+
                     b.Property<string>("ResponsavelNome")
                         .IsRequired()
                         .HasColumnType("text");

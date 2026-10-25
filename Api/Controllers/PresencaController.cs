@@ -1,11 +1,9 @@
-﻿using System.Security.Claims;
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Request;
 using Application.Response;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace Api.Controllers
 {
@@ -23,19 +21,17 @@ namespace Api.Controllers
             _logger = logger;
         }
 
-        // Quem está logado vem do token, nunca de parâmetro da URL.
         private string NomeUsuarioLogado =>
             User.FindFirst(ClaimTypes.Name)?.Value ?? User.Identity?.Name ?? string.Empty;
 
         private bool EhCoordenador => User.IsInRole("Coordenador");
 
-        // GET /api/Professores/minhas-turmas
         [HttpGet("Professores/minhas-turmas")]
-        public async Task<IActionResult> MinhasTurmas()
+        public async Task<IActionResult> MinhasTurmas([FromQuery] DateOnly? data, [FromQuery] Guid? professorId)
         {
             try
             {
-                var response = await _presencaService.ListarTurmasDoProfessorAsync(NomeUsuarioLogado, EhCoordenador);
+                var response = await _presencaService.ListarTurmasDoProfessorAsync(NomeUsuarioLogado, EhCoordenador, data, professorId);
                 if (!response.Status) return ResponderFalha(response.Falha, response);
                 return Ok(response);
             }
@@ -51,7 +47,6 @@ namespace Api.Controllers
             }
         }
 
-        // GET /api/Turmas/{id}/chamada?data=2026-09-26
         [HttpGet("Turmas/{id:guid}/chamada")]
         public async Task<IActionResult> ObterChamada(Guid id, [FromQuery] DateOnly? data)
         {
@@ -73,7 +68,27 @@ namespace Api.Controllers
             }
         }
 
-        // POST /api/Turmas/{id}/chamada
+        [HttpGet("Turmas/{id:guid}/chamada-mensal")]
+        public async Task<IActionResult> ObterChamadaMensal(Guid id, [FromQuery] string? mes)
+        {
+            try
+            {
+                var response = await _presencaService.ObterChamadaMensalAsync(id, mes, NomeUsuarioLogado, EhCoordenador);
+                if (!response.Status) return ResponderFalha(response.Falha, response);
+                return Ok(response);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Erro ao carregar a chamada do mês da turma {TurmaId}.", id);
+
+                return StatusCode(StatusCodes.Status500InternalServerError, new ChamadaMensalResponseDTO
+                {
+                    Status = false,
+                    Message = "Não foi possível carregar a chamada do mês agora. Tente novamente em instantes. Se continuar, avise o suporte."
+                });
+            }
+        }
+
         [HttpPost("Turmas/{id:guid}/chamada")]
         public async Task<IActionResult> RegistrarChamada(Guid id, [FromBody] RegistrarPresencaRequestDTO dto)
         {

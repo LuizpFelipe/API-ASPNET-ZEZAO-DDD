@@ -1,25 +1,30 @@
-﻿using Application.Interfaces;
+﻿using Application.Configuration;
+using Application.Interfaces;
 using Application.Request;
 using Application.Response;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
+using System.Globalization;
 
 namespace Application.Services
 {
     public class PresencaService : IPresencaService
     {
         private readonly IPresencaRepository _presencaRepository;
+        private readonly IRelogio _relogio;
+        private readonly ConfiguracoesPresenca _configuracoes;
 
-        public PresencaService(IPresencaRepository presencaRepository)
+        public PresencaService(IPresencaRepository presencaRepository, IRelogio relogio, ConfiguracoesPresenca configuracoes)
         {
             _presencaRepository = presencaRepository;
+            _relogio = relogio;
+            _configuracoes = configuracoes;
         }
 
-        public async Task<TurmaDoProfessorResponseDTO> ListarTurmasDoProfessorAsync(string nomeUsuario, bool ehCoordenador)
+        public async Task<TurmaDoProfessorResponseDTO> ListarTurmasDoProfessorAsync(string nomeUsuario, bool ehCoordenador, DateOnly? data = null, Guid? professorIdFiltro = null)
         {
-            // Coordenador vê todas as turmas; Professor só as dele.
-            Guid? professorId = null;
+            Guid? professorId = ehCoordenador ? professorIdFiltro : null;
 
             if (!ehCoordenador)
             {
@@ -37,7 +42,10 @@ namespace Application.Services
                 professorId = professor.Id;
             }
 
-            var turmas = await _presencaRepository.ObterTurmasAsync(professorId);
+            var turmas = (await _presencaRepository.ObterTurmasAsync(professorId)).ToList();
+
+            if (data.HasValue)
+                turmas = turmas.Where(t => t.TemAulaEm(data.Value)).ToList();
 
             var lista = turmas.Select(t => new TurmaDoProfessorDataDTO
             {
@@ -45,11 +53,15 @@ namespace Application.Services
                 Nome = t.Nome,
                 DiasSemana = t.DiasSemana,
                 Horario = t.Horario,
-                CategoriaId = t.CategoriaId
+                CategoriaId = t.CategoriaId,
+                ProfessorId = t.ProfessorId,
+                TemAulaNaData = data.HasValue ? true : (bool?)null
             }).ToList();
 
             string mensagem;
-            if (lista.Count == 0)
+            if (lista.Count == 0 && data.HasValue)
+                mensagem = "Nenhuma aula neste dia.";
+            else if (lista.Count == 0)
                 mensagem = ehCoordenador ? "Ainda não há turmas cadastradas." : "Você ainda não tem turmas cadastradas.";
             else
                 mensagem = lista.Count == 1 ? "1 turma encontrada." : $"{lista.Count} turmas encontradas.";
@@ -73,7 +85,8 @@ namespace Application.Services
             var alunos = (await _presencaRepository.ObterAlunosDaTurmaAsync(turmaId)).ToList();
             var presencas = await _presencaRepository.ObterPresencasAsync(turmaId, data.Value);
 
-            var chamada = MontarChamada(turma!, data.Value, alunos, presencas);
+            var (podeEditar, motivo) = AvaliarEdicao(turma!, data.Value, ehCoordenador);
+            var chamada = MontarChamada(turma!, data.Value, alunos, presencas, podeEditar, motivo);
 
             string mensagem;
             if (chamada.Alunos.Count == 0)
@@ -94,20 +107,22 @@ namespace Application.Services
             if (dto == null || dto.Data == default)
                 return Falha("Informe a data da chamada.", TipoFalhaPresenca.Invalido);
 
+            var (podeEditar, motivo) = AvaliarEdicao(turma!, dto.Data, ehCoordenador);
+            if (!podeEditar)
+                return Falha(motivo!, TipoFalhaPresenca.Invalido);
+
             if (dto.Presencas == null || dto.Presencas.Count == 0)
                 return Falha("Informe ao menos um aluno na lista de presenças.", TipoFalhaPresenca.Invalido);
 
             if (dto.Presencas.GroupBy(p => p.AlunoId).Any(g => g.Count() > 1))
                 return Falha("Há aluno repetido na lista de presenças.", TipoFalhaPresenca.Invalido);
 
-            // Só aceita alunos que pertencem a esta turma (e não estão inativos).
             var alunos = (await _presencaRepository.ObterAlunosDaTurmaAsync(turmaId)).ToList();
             var idsDaTurma = alunos.Select(a => a.Id).ToHashSet();
 
             if (dto.Presencas.Any(p => !idsDaTurma.Contains(p.AlunoId)))
                 return Falha("Há aluno na lista que não pertence a esta turma ou está inativo.", TipoFalhaPresenca.Invalido);
 
-            // Se já existe registro do aluno nessa data, atualiza; senão, cria.
             var existentes = await _presencaRepository.ObterPresencasAsync(turmaId, dto.Data);
             var novas = new List<Presenca>();
 
@@ -130,13 +145,66 @@ namespace Application.Services
             var acao = novas.Count == 0 ? "atualizada" : "registrada";
             var mensagem = $"Chamada {acao}: {Plural(presentes, "presente", "presentes")} e {Plural(ausentes, "ausente", "ausentes")}.";
 
-            return Sucesso(mensagem, MontarChamada(turma!, dto.Data, alunos, existentes));
+            return Sucesso(mensagem, MontarChamada(turma!, dto.Data, alunos, existentes, true, null));
         }
 
-        // ---------- helpers ----------
+        public async Task<ChamadaMensalResponseDTO> ObterChamadaMensalAsync(Guid turmaId, string? mes, string nomeUsuario, bool ehCoordenador)
+        {
+            var (turma, erro) = await ValidarAcessoAsync(turmaId, nomeUsuario, ehCoordenador);
+            if (erro != null) return FalhaMensal(erro.Message, erro.Falha);
 
-        // Garante que a turma existe e que o usuário pode acessá-la:
-        // Coordenador acessa qualquer uma; Professor só as turmas dele.
+            if (!DateOnly.TryParseExact($"{mes}-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var inicioDoMes))
+                return FalhaMensal("Informe o mês no formato aaaa-mm. Exemplo: ?mes=2026-10", TipoFalhaPresenca.Invalido);
+
+            var fimDoMes = inicioDoMes.AddMonths(1).AddDays(-1);
+
+            var datasDeAula = Enumerable.Range(0, fimDoMes.Day)
+                .Select(deslocamento => inicioDoMes.AddDays(deslocamento))
+                .Where(turma!.TemAulaEm)
+                .ToList();
+
+            var alunos = (await _presencaRepository.ObterAlunosDaTurmaAsync(turmaId)).ToList();
+            var presencas = await _presencaRepository.ObterPresencasDoMesAsync(turmaId, inicioDoMes, fimDoMes);
+
+            var presentePorAlunoEData = presencas
+                .GroupBy(p => (p.AlunoId, p.Data))
+                .ToDictionary(grupo => grupo.Key, grupo => grupo.First().Presente);
+
+            var data = new ChamadaMensalDataDTO
+            {
+                Turma = new ChamadaMensalTurmaDTO
+                {
+                    Id = turma!.Id,
+                    Nome = turma.Nome,
+                    DiasSemana = turma.DiasSemana,
+                    Horario = turma.Horario
+                },
+                Mes = inicioDoMes.ToString("yyyy-MM", CultureInfo.InvariantCulture),
+                Datas = datasDeAula.Select(dataDeAula => new ChamadaMensalDataDeAulaDTO
+                {
+                    Data = dataDeAula,
+                    PodeEditar = AvaliarEdicao(turma, dataDeAula, ehCoordenador).podeEditar
+                }).ToList(),
+                Alunos = alunos.Select(aluno => new ChamadaMensalAlunoDTO
+                {
+                    AlunoId = aluno.Id,
+                    NomeCompleto = aluno.NomeCompleto,
+                    EhInadimplente = aluno.Status == StatusAluno.Inadimplente,
+                    Presencas = datasDeAula.Select(dataDeAula => new ChamadaMensalPresencaDTO
+                    {
+                        Data = dataDeAula,
+                        Presente = presentePorAlunoEData.TryGetValue((aluno.Id, dataDeAula), out var presente) ? presente : (bool?)null
+                    }).ToList()
+                }).ToList()
+            };
+
+            string mensagem = datasDeAula.Count == 0
+                ? "A turma não tem aulas neste mês."
+                : $"{Plural(datasDeAula.Count, "aula", "aulas")} no mês.";
+
+            return new ChamadaMensalResponseDTO { Status = true, Message = mensagem, Data = data };
+        }
+
         private async Task<(Turma? turma, ChamadaResponseDTO? erro)> ValidarAcessoAsync(Guid turmaId, string nomeUsuario, bool ehCoordenador)
         {
             var turma = await _presencaRepository.ObterTurmaPorIdAsync(turmaId);
@@ -153,7 +221,24 @@ namespace Application.Services
             return (turma, null);
         }
 
-        private static ChamadaDataDTO MontarChamada(Turma turma, DateOnly data, List<Aluno> alunos, List<Presenca> presencas)
+        private (bool podeEditar, string? motivo) AvaliarEdicao(Turma turma, DateOnly data, bool ehCoordenador)
+        {
+            var hoje = _relogio.HojeNoBrasil();
+
+            if (data > hoje)
+                return (false, "Não é possível lançar chamada em data futura.");
+
+            if (!turma.TemAulaEm(data))
+                return (false, "A turma não tem aula nesta data.");
+
+            var limite = _configuracoes.DiasLimiteEdicaoProfessor;
+            if (!ehCoordenador && hoje.DayNumber - data.DayNumber > limite)
+                return (false, $"O professor só pode alterar chamadas dos últimos {limite} dias. Peça à Coordenação para corrigir.");
+
+            return (true, null);
+        }
+
+        private static ChamadaDataDTO MontarChamada(Turma turma, DateOnly data, List<Aluno> alunos, List<Presenca> presencas, bool podeEditar, string? motivoSomenteLeitura)
         {
             var presentePorAluno = presencas
                 .GroupBy(p => p.AlunoId)
@@ -164,6 +249,8 @@ namespace Application.Services
                 TurmaId = turma.Id,
                 TurmaNome = turma.Nome,
                 Data = data,
+                PodeEditar = podeEditar,
+                MotivoSomenteLeitura = motivoSomenteLeitura,
                 Alunos = alunos.Select(a => new ChamadaAlunoDTO
                 {
                     AlunoId = a.Id,
@@ -189,6 +276,13 @@ namespace Application.Services
         };
 
         private static ChamadaResponseDTO Falha(string message, TipoFalhaPresenca falha) => new()
+        {
+            Status = false,
+            Message = message,
+            Falha = falha
+        };
+
+        private static ChamadaMensalResponseDTO FalhaMensal(string message, TipoFalhaPresenca falha) => new()
         {
             Status = false,
             Message = message,

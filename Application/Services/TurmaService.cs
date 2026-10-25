@@ -3,11 +3,14 @@ using Application.Request;
 using Application.Response;
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.Utilitarios;
 
 namespace Application.Services
 {
     public class TurmaService : ITurmaService
     {
+        private const string MensagemDiasInvalidos = "Informe ao menos um dia da semana válido. Exemplo: Terça,Quinta.";
+
         private readonly ITurmaRepository _turmaRepository;
         private readonly ICategoriaRepository _categoriaRepository;
         private readonly IProfessorRepository _professorRepository;
@@ -53,11 +56,14 @@ namespace Application.Services
 
         public async Task<TurmaResponseDTO> CriarAsync(CriarTurmaRequestDTO dto)
         {
+            if (!DiasDaSemana.EhValido(dto.DiasSemana))
+                return new TurmaResponseDTO { Status = false, Message = MensagemDiasInvalidos };
+
             var mensagemDeErro = await ValidarCategoriaEProfessorAsync(dto.CategoriaId, dto.ProfessorId);
             if (mensagemDeErro != null)
                 return new TurmaResponseDTO { Status = false, Message = mensagemDeErro };
 
-            var turma = new Turma(dto.Nome, dto.DiasSemana, dto.Horario, dto.CategoriaId, dto.ProfessorId);
+            var turma = new Turma(dto.Nome, DiasDaSemana.Padronizar(dto.DiasSemana), dto.Horario, dto.CategoriaId, dto.ProfessorId);
             await _turmaRepository.AdicionarAsync(turma);
             return new TurmaResponseDTO { Status = true, Message = "Turma criada com sucesso", Data = turma };
         }
@@ -67,11 +73,14 @@ namespace Application.Services
             var turma = await _turmaRepository.ObterPorIdAsync(id);
             if (turma == null) return new TurmaResponseDTO { Status = false, Message = "Turma não encontrada" };
 
+            if (!DiasDaSemana.EhValido(dto.DiasSemana))
+                return new TurmaResponseDTO { Status = false, Message = MensagemDiasInvalidos };
+
             var mensagemDeErro = await ValidarCategoriaEProfessorAsync(dto.CategoriaId, dto.ProfessorId);
             if (mensagemDeErro != null)
                 return new TurmaResponseDTO { Status = false, Message = mensagemDeErro };
 
-            turma.AtualizarDetalhes(dto.Nome, dto.DiasSemana, dto.Horario, dto.CategoriaId, dto.ProfessorId);
+            turma.AtualizarDetalhes(dto.Nome, DiasDaSemana.Padronizar(dto.DiasSemana), dto.Horario, dto.CategoriaId, dto.ProfessorId);
             await _turmaRepository.AtualizarAsync(turma);
 
             return new TurmaResponseDTO { Status = true, Message = "Atualizada com sucesso", Data = turma };

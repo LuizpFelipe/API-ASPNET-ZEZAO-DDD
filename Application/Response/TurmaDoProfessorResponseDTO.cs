@@ -8,7 +8,7 @@ namespace Application.Response
         public bool Status { get; set; }
         public List<TurmaDoProfessorDataDTO> Data { get; set; } = new();
 
-        
+
         [JsonIgnore]
         public TipoFalhaPresenca Falha { get; set; }
     }
@@ -20,5 +20,7 @@ namespace Application.Response
         public string DiasSemana { get; set; } = string.Empty;
         public string Horario { get; set; } = string.Empty;
         public Guid CategoriaId { get; set; }
+        public Guid ProfessorId { get; set; }
+        public bool? TemAulaNaData { get; set; }
     }
 }

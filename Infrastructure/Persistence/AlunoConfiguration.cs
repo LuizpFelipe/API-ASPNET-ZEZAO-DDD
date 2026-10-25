@@ -21,5 +21,7 @@ public class AlunoConfiguration : IEntityTypeConfiguration<Aluno>
                .WithMany()
                .HasForeignKey(aluno => aluno.TurmaId)
                .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(a => a.ResponsavelCpf).HasMaxLength(11);
     }
 }
