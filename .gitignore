@@ -500,3 +500,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+
+#fotos de usuarios
+Api/wwwroot/uploads/

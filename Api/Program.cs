@@ -1,10 +1,20 @@
+using Application.Configuration;
 using Application.Interfaces;
 using Application.Services;
 using Domain.Interfaces;
 using Infrastructure.Context;
+using Infrastructure.Email;
+using Infrastructure.Pdf;
+using Infrastructure.Persistence;
+using Infrastructure.Persistence.Seeders;
 using Infrastructure.Repositories;
 using Infrastructure.Security;
+using Infrastructure.Storage;
+using Infrastructure.Time;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,13 +27,54 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.Configure<ConfiguracoesSmtp>(builder.Configuration.GetSection("Smtp"));
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+builder.Services.AddScoped<ICodigoRecuperacaoSenhaRepository, CodigoRecuperacaoSenhaRepository>();
+builder.Services.AddScoped<IRecuperacaoSenhaService, RecuperacaoSenhaService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 
 builder.Services.AddScoped<IUserServices, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISecurityService, BCryptoSecurityService>();
+builder.Services.AddScoped<IProfessorService, ProfessorService>();
+builder.Services.AddScoped<IProfessorRepository, ProfessorRepository>();
+builder.Services.AddScoped<ITurmaService, TurmaService>();
+builder.Services.AddScoped<ITurmaRepository, TurmaRepository>();
+
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, JwtTokenService>();
+
+builder.Services.AddScoped<IAlunoRepository, AlunoRepository>();
+builder.Services.AddScoped<IAlunoService, AlunoService>();
+builder.Services.AddScoped<IArmazenamentoArquivoService, ArmazenamentoLocalService>();
+
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<ICategoriaService, CategoriaService>();
+
+builder.Services.AddScoped<ICoordenadorRepository, CoordenadorRepository>();
+builder.Services.AddScoped<ICoordenadorService, CoordenadorService>();
+builder.Services.AddScoped<ICampeonatoRepository, CampeonatoRepository>();
+builder.Services.AddScoped<ICampeonatoService, CampeonatoService>();
+
+builder.Services.AddScoped<IPresencaRepository, PresencaRepository>();
+builder.Services.AddScoped<IPresencaService, PresencaService>();
+
+builder.Services.AddSingleton<IRelogio, RelogioBrasil>();
+builder.Services.AddSingleton(builder.Configuration.GetSection("Presenca").Get<ConfiguracoesPresenca>()
+    ?? new ConfiguracoesPresenca());
+
+builder.Services.AddSingleton(builder.Configuration.GetSection("Contrato").Get<ConfiguracoesContrato>()
+    ?? throw new InvalidOperationException("Configuração 'Contrato' não encontrada em appsettings."));
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IContratoRepository, ContratoRepository>();
+builder.Services.AddScoped<IParcelaRepository, ParcelaRepository>();
+builder.Services.AddScoped<IContratoService, ContratoService>();
+builder.Services.AddScoped<IContratoPdfService, ContratoPdfService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
@@ -31,20 +82,64 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Configuração 'Jwt:Key' não encontrada em appsettings.");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
+
+try
+{
+    using var escopoDaNormalizacao = app.Services.CreateScope();
+    var contextoDoBanco = escopoDaNormalizacao.ServiceProvider.GetRequiredService<AppDbContext>();
+    var turmasSemConversao = await TurmaDiasSemanaNormalizador.NormalizarAsync(contextoDoBanco);
+    foreach (var descricaoDaTurma in turmasSemConversao)
+    {
+        app.Logger.LogWarning("Turma com dias da semana não reconhecidos, corrigir manualmente: {Turma}", descricaoDaTurma);
+    }
+}
+catch (Exception excecao)
+{
+    app.Logger.LogWarning(excecao, "Não foi possível padronizar os dias da semana das turmas. Aplique as migrations e reinicie.");
+}
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var securityService = scope.ServiceProvider.GetRequiredService<ISecurityService>();
+
+    var emailDoCoordenador = builder.Configuration["UsuariosIniciais:EmailDoCoordenador"]
+        ?? throw new InvalidOperationException("Configure UsuariosIniciais:EmailDoCoordenador.");
+    var emailDoProfessor = builder.Configuration["UsuariosIniciais:EmailDoProfessor"]
+        ?? throw new InvalidOperationException("Configure UsuariosIniciais:EmailDoProfessor.");
+
+    UsuarioSeeder.Seed(dbContext, securityService, emailDoCoordenador, emailDoProfessor);
+    await CategoriaSeeder.SeedAsync(dbContext);
 }
 
-app.UseHttpsRedirection();
 
 app.UseCors("AllowAll");
-
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

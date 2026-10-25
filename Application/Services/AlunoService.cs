@@ -1,0 +1,146 @@
+﻿using Application.Interfaces;
+using Application.Request;
+using Application.Response;
+using Application.Validacoes;
+using Domain.Entities;
+using Domain.Interfaces;
+
+
+namespace Application.Services;
+
+public class AlunoService : IAlunoService
+{
+    private readonly IAlunoRepository _alunoRepository;
+    private readonly ICategoriaRepository _categoriaRepository;
+    private readonly ITurmaRepository _turmaRepository;
+    private readonly IContratoService _contratoService;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public AlunoService(IAlunoRepository alunoRepository, ICategoriaRepository categoriaRepository,
+                        ITurmaRepository turmaRepository,
+                        IContratoService contratoService, IUnitOfWork unitOfWork)
+    {
+        _alunoRepository = alunoRepository;
+        _categoriaRepository = categoriaRepository;
+        _turmaRepository = turmaRepository;
+        _contratoService = contratoService;
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<AlunoResponseDTO> CriarAsync(CriarAlunoRequestDTO dto)
+    {
+        var existe = await _alunoRepository.ExisteComMesmoNomeEDataNascimentoAsync(dto.NomeCompleto, dto.DataNascimento);
+        var mensagemDoCpf = ValidarCpfDoResponsavel(dto.ResponsavelCpf, out var cpfDoResponsavel);
+
+        if (mensagemDoCpf != null)
+        {
+            return new AlunoResponseDTO { Status = false, Message = mensagemDoCpf };
+        }
+
+        if (existe)
+        {
+            return new AlunoResponseDTO { Status = false, Message = "Aluno já cadastrado no sistema." };
+        }
+
+        if (await _turmaRepository.ObterPorIdAsync(dto.TurmaId) == null)
+        {
+            return new AlunoResponseDTO { Status = false, Message = "Turma não encontrada." };
+        }
+
+        int idade = CalcularIdade(dto.DataNascimento);
+
+        var categoria = await _categoriaRepository.ObterPorIdadeAsync(idade);
+        if (categoria == null)
+        {
+            return new AlunoResponseDTO { Status = false, Message = $"Nenhuma categoria cadastrada compatível com a idade de {idade} anos." };
+        }
+
+        var aluno = new Aluno(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico,
+                              dto.FotoUrl, dto.ResponsavelNome, cpfDoResponsavel, dto.Telefone,
+                              dto.Endereco, dto.TurmaId, categoria.Id);
+
+        await _unitOfWork.ExecutarEmTransacaoAsync(async () =>
+        {
+            await _alunoRepository.AdicionarAsync(aluno);
+            await _contratoService.CriarAsync(aluno.Id);
+        });
+
+        return new AlunoResponseDTO
+        {
+            Status = true,
+            Message = "Aluno cadastrado com sucesso.",
+            Data = new { aluno.Id, Categoria = categoria.Nome }
+        };
+    }
+
+    public async Task<AlunoResponseDTO> AtualizarAsync(Guid id, AtualizarAlunoRequestDTO dto)
+    {
+        var aluno = await _alunoRepository.ObterPorIdAsync(id);
+        if (aluno == null) return new AlunoResponseDTO { Status = false, Message = "Aluno não encontrado." };
+
+        var mensagemDoCpf = ValidarCpfDoResponsavel(dto.ResponsavelCpf, out var cpfDoResponsavel);
+        if (mensagemDoCpf != null) return new AlunoResponseDTO { Status = false, Message = mensagemDoCpf };
+
+        var existe = await _alunoRepository.ExisteComMesmoNomeEDataNascimentoAsync(dto.NomeCompleto, dto.DataNascimento, id);
+        if (existe) return new AlunoResponseDTO { Status = false, Message = "Outro aluno já possui este nome e data de nascimento." };
+
+        if (await _turmaRepository.ObterPorIdAsync(dto.TurmaId) == null)
+        {
+            return new AlunoResponseDTO { Status = false, Message = "Turma não encontrada." };
+        }
+
+        int idade = CalcularIdade(dto.DataNascimento);
+        var categoria = await _categoriaRepository.ObterPorIdadeAsync(idade);
+        if (categoria == null)
+        {
+            return new AlunoResponseDTO { Status = false, Message = $"Nenhuma categoria cadastrada compatível com a idade de {idade} anos." };
+        }
+
+        aluno.AtualizarDados(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico, dto.FotoUrl, dto.ResponsavelNome, cpfDoResponsavel, dto.Telefone, dto.Endereco, dto.TurmaId, categoria.Id);
+        await _alunoRepository.AtualizarAsync(aluno);
+
+        return new AlunoResponseDTO { Status = true, Message = "Aluno atualizado com sucesso." };
+    }
+
+    public async Task<AlunoResponseDTO> RemoverAsync(Guid id)
+    {
+        var aluno = await _alunoRepository.ObterPorIdAsync(id);
+        if (aluno == null) return new AlunoResponseDTO { Status = false, Message = "Aluno não encontrado." };
+
+        aluno.Desativar();
+        await _alunoRepository.AtualizarAsync(aluno);
+
+        return new AlunoResponseDTO { Status = true, Message = "Aluno inativado com sucesso." };
+    }
+
+    public async Task<AlunoResponseDTO> ListarAsync()
+    {
+        var alunos = await _alunoRepository.ObterTodosAsync();
+        return new AlunoResponseDTO { Status = true, Data = alunos };
+    }
+
+    public async Task<AlunoResponseDTO> ObterPorIdAsync(Guid id)
+    {
+        var aluno = await _alunoRepository.ObterPorIdAsync(id);
+        if (aluno == null) return new AlunoResponseDTO { Status = false, Message = "Aluno não encontrado." };
+
+        return new AlunoResponseDTO { Status = true, Data = aluno };
+    }
+
+    private static string? ValidarCpfDoResponsavel(string? cpfInformado, out string cpfNormalizado)
+    {
+        cpfNormalizado = CpfValidador.Normalizar(cpfInformado);
+
+        if (string.IsNullOrEmpty(cpfNormalizado)) return "Informe o CPF do responsável.";
+        if (!CpfValidador.EhValido(cpfNormalizado)) return "CPF do responsável inválido.";
+
+        return null;
+    }
+    private int CalcularIdade(DateOnly dataNascimento)
+    {
+        var hoje = DateOnly.FromDateTime(DateTime.Now);
+        int idade = hoje.Year - dataNascimento.Year;
+        if (dataNascimento > hoje.AddYears(-idade)) idade--;
+        return idade;
+    }
+}
