@@ -1,15 +1,12 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using Application.Interfaces;
+using Application.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Application.Interfaces;
-using Application.Request;
 
 namespace Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize(Roles = "Coordenador")]
     public class ProfessoresController : ControllerBase
     {
         private readonly IProfessorService _professorService;
@@ -34,14 +31,16 @@ namespace Api.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "Coordenador")]
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CriarProfessorRequestDTO dto)
         {
             var result = await _professorService.CriarAsync(dto);
-            if (!result.Status) return BadRequest(result); 
+            if (!result.Status) return BadRequest(result);
             return Ok(result);
         }
 
+        [Authorize(Roles = "Coordenador")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(Guid id, [FromBody] AtualizarProfessorRequestDTO dto)
         {
@@ -50,6 +49,7 @@ namespace Api.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "Coordenador")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
