@@ -18,9 +18,10 @@ public class Aluno
 
     public Guid CategoriaId { get; private set; }
     public Categoria? Categoria { get; private set; }
+    public string? ResponsavelCpf { get; private set; }
 
     public Aluno(string nomeCompleto, DateOnly dataNascimento, NivelTecnico nivelTecnico,
-                 string? fotoUrl, string responsavelNome, string telefone,
+                 string? fotoUrl, string responsavelNome, string responsavelCpf, string telefone,
                  string endereco, Guid turmaId, Guid categoriaId)
     {
         Id = Guid.NewGuid();
@@ -34,11 +35,12 @@ public class Aluno
         DataCadastro = DateTime.UtcNow;
         Status = StatusAluno.Ativo;
         TurmaId = turmaId;
-        CategoriaId = categoriaId; 
+        CategoriaId = categoriaId;
+        ResponsavelCpf = responsavelCpf;
     }
 
     public void AtualizarDados(string nomeCompleto, DateOnly dataNascimento, NivelTecnico nivelTecnico,
-                               string? fotoUrl, string responsavelNome, string telefone, string endereco, Guid turmaId, Guid categoriaId)
+                               string? fotoUrl, string responsavelNome, string responsavelCpf, string telefone, string endereco, Guid turmaId, Guid categoriaId)
     {
         NomeCompleto = nomeCompleto;
         DataNascimento = dataNascimento;
@@ -48,7 +50,8 @@ public class Aluno
         Telefone = telefone;
         Endereco = endereco;
         TurmaId = turmaId;
-        CategoriaId = categoriaId; 
+        CategoriaId = categoriaId;
+        ResponsavelCpf = responsavelCpf;
     }
 
     public void Desativar()

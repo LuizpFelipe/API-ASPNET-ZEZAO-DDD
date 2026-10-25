@@ -1,5 +1,6 @@
 using Application.Configuration;
 using Application.Interfaces;
+using Application.Validacoes;
 using Domain.Entities;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -64,6 +65,7 @@ public class ContratoPdfService : IContratoPdfService
                         linha.RelativeItem().Element(caixa => MontarParte(caixa, "CONTRATANTE", new[]
                         {
                             aluno.ResponsavelNome,
+                            $"CPF: {CpfValidador.Formatar(aluno.ResponsavelCpf)}",
                             $"Telefone: {aluno.Telefone}",
                             $"Endereço: {aluno.Endereco}"
                         }));

@@ -1,8 +1,10 @@
 ﻿using Application.Interfaces;
 using Application.Request;
 using Application.Response;
+using Application.Validacoes;
 using Domain.Entities;
 using Domain.Interfaces;
+
 
 namespace Application.Services;
 
@@ -28,6 +30,13 @@ public class AlunoService : IAlunoService
     public async Task<AlunoResponseDTO> CriarAsync(CriarAlunoRequestDTO dto)
     {
         var existe = await _alunoRepository.ExisteComMesmoNomeEDataNascimentoAsync(dto.NomeCompleto, dto.DataNascimento);
+        var mensagemDoCpf = ValidarCpfDoResponsavel(dto.ResponsavelCpf, out var cpfDoResponsavel);
+
+        if (mensagemDoCpf != null)
+        {
+            return new AlunoResponseDTO { Status = false, Message = mensagemDoCpf };
+        }
+
         if (existe)
         {
             return new AlunoResponseDTO { Status = false, Message = "Aluno já cadastrado no sistema." };
@@ -47,7 +56,7 @@ public class AlunoService : IAlunoService
         }
 
         var aluno = new Aluno(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico,
-                              dto.FotoUrl, dto.ResponsavelNome, dto.Telefone,
+                              dto.FotoUrl, dto.ResponsavelNome, cpfDoResponsavel, dto.Telefone,
                               dto.Endereco, dto.TurmaId, categoria.Id);
 
         await _unitOfWork.ExecutarEmTransacaoAsync(async () =>
@@ -69,6 +78,9 @@ public class AlunoService : IAlunoService
         var aluno = await _alunoRepository.ObterPorIdAsync(id);
         if (aluno == null) return new AlunoResponseDTO { Status = false, Message = "Aluno não encontrado." };
 
+        var mensagemDoCpf = ValidarCpfDoResponsavel(dto.ResponsavelCpf, out var cpfDoResponsavel);
+        if (mensagemDoCpf != null) return new AlunoResponseDTO { Status = false, Message = mensagemDoCpf };
+
         var existe = await _alunoRepository.ExisteComMesmoNomeEDataNascimentoAsync(dto.NomeCompleto, dto.DataNascimento, id);
         if (existe) return new AlunoResponseDTO { Status = false, Message = "Outro aluno já possui este nome e data de nascimento." };
 
@@ -84,7 +96,7 @@ public class AlunoService : IAlunoService
             return new AlunoResponseDTO { Status = false, Message = $"Nenhuma categoria cadastrada compatível com a idade de {idade} anos." };
         }
 
-        aluno.AtualizarDados(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico, dto.FotoUrl, dto.ResponsavelNome, dto.Telefone, dto.Endereco, dto.TurmaId, categoria.Id);
+        aluno.AtualizarDados(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico, dto.FotoUrl, dto.ResponsavelNome, cpfDoResponsavel, dto.Telefone, dto.Endereco, dto.TurmaId, categoria.Id);
         await _alunoRepository.AtualizarAsync(aluno);
 
         return new AlunoResponseDTO { Status = true, Message = "Aluno atualizado com sucesso." };
@@ -115,6 +127,15 @@ public class AlunoService : IAlunoService
         return new AlunoResponseDTO { Status = true, Data = aluno };
     }
 
+    private static string? ValidarCpfDoResponsavel(string? cpfInformado, out string cpfNormalizado)
+    {
+        cpfNormalizado = CpfValidador.Normalizar(cpfInformado);
+
+        if (string.IsNullOrEmpty(cpfNormalizado)) return "Informe o CPF do responsável.";
+        if (!CpfValidador.EhValido(cpfNormalizado)) return "CPF do responsável inválido.";
+
+        return null;
+    }
     private int CalcularIdade(DateOnly dataNascimento)
     {
         var hoje = DateOnly.FromDateTime(DateTime.Now);

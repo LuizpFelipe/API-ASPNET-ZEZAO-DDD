@@ -10,6 +10,7 @@ using Infrastructure.Persistence.Seeders;
 using Infrastructure.Repositories;
 using Infrastructure.Security;
 using Infrastructure.Storage;
+using Infrastructure.Time;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -63,6 +64,10 @@ builder.Services.AddScoped<ICampeonatoService, CampeonatoService>();
 builder.Services.AddScoped<IPresencaRepository, PresencaRepository>();
 builder.Services.AddScoped<IPresencaService, PresencaService>();
 
+builder.Services.AddSingleton<IRelogio, RelogioBrasil>();
+builder.Services.AddSingleton(builder.Configuration.GetSection("Presenca").Get<ConfiguracoesPresenca>()
+    ?? new ConfiguracoesPresenca());
+
 builder.Services.AddScoped<IReposicaoRepository, ReposicaoRepository>();
 builder.Services.AddScoped<IReposicaoService, ReposicaoService>();
 
@@ -101,6 +106,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+try
+{
+    using var escopoDaNormalizacao = app.Services.CreateScope();
+    var contextoDoBanco = escopoDaNormalizacao.ServiceProvider.GetRequiredService<AppDbContext>();
+    var turmasSemConversao = await TurmaDiasSemanaNormalizador.NormalizarAsync(contextoDoBanco);
+    foreach (var descricaoDaTurma in turmasSemConversao)
+    {
+        app.Logger.LogWarning("Turma com dias da semana não reconhecidos, corrigir manualmente: {Turma}", descricaoDaTurma);
+    }
+}
+catch (Exception excecao)
+{
+    app.Logger.LogWarning(excecao, "Não foi possível padronizar os dias da semana das turmas. Aplique as migrations e reinicie.");
+}
 
 if (app.Environment.IsDevelopment())
 {

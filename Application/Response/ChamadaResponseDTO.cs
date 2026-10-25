@@ -16,7 +16,6 @@ namespace Application.Response
         public bool Status { get; set; }
         public ChamadaDataDTO? Data { get; set; }
 
-        // Uso interno: o controller usa para escolher 400, 403 ou 404. Não vai no JSON.
         [JsonIgnore]
         public TipoFalhaPresenca Falha { get; set; }
     }
@@ -26,10 +25,11 @@ namespace Application.Response
         public Guid TurmaId { get; set; }
         public string TurmaNome { get; set; } = string.Empty;
         public DateOnly Data { get; set; }
+        public bool PodeEditar { get; set; }
+        public string? MotivoSomenteLeitura { get; set; }
         public List<ChamadaAlunoDTO> Alunos { get; set; } = new();
     }
 
-    // Só dados técnicos e de presença. Nenhum valor financeiro, só a sinalização.
     public class ChamadaAlunoDTO
     {
         public Guid AlunoId { get; set; }
@@ -38,7 +38,6 @@ namespace Application.Response
         public string NivelTecnico { get; set; } = string.Empty;
         public bool EhInadimplente { get; set; }
 
-        // null = ainda não há registro de presença para esse aluno nessa data.
         public bool? Presente { get; set; }
     }
 }

@@ -103,6 +103,11 @@ public class ContratoService : IContratoService
             return new ContratoResponseDTO { Status = false, Message = "Dados do aluno do contrato não encontrados." };
         }
 
+        if (string.IsNullOrWhiteSpace(aluno.ResponsavelCpf))
+        {
+            return new ContratoResponseDTO { Status = false, Message = "Informe o CPF do responsável no cadastro do aluno antes de gerar o contrato." };
+        }
+
         var pdf = _pdfService.Gerar(contrato, aluno, aluno.Categoria?.Nome ?? string.Empty, turma.Nome, _configuracoes);
 
         return new ContratoResponseDTO { Status = true, Message = "PDF gerado com sucesso.", Data = pdf };
