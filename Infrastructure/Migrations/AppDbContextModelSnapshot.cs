@@ -81,6 +81,33 @@ namespace Infrastructure.Migrations
                     b.ToTable("Alunos");
                 });
 
+            modelBuilder.Entity("Domain.Entities.AvisoCobranca", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("DataEnvio")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Destinatario")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("ParcelaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParcelaId");
+
+                    b.ToTable("AvisoCobrancas", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Campeonato", b =>
                 {
                     b.Property<Guid>("Id")
@@ -465,6 +492,17 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Categoria");
+                });
+
+            modelBuilder.Entity("Domain.Entities.AvisoCobranca", b =>
+                {
+                    b.HasOne("Domain.Entities.Parcela", "Parcela")
+                        .WithMany()
+                        .HasForeignKey("ParcelaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Parcela");
                 });
 
             modelBuilder.Entity("Domain.Entities.Campeonato", b =>
