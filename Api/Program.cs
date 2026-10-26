@@ -129,6 +129,12 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+if (builder.Configuration.GetValue<bool>("Banco:MigrarAoIniciar"))
+{
+    using var escopoDaMigration = app.Services.CreateScope();
+    escopoDaMigration.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
+
 try
 {
     using var escopoDaNormalizacao = app.Services.CreateScope();
