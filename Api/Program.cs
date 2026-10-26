@@ -179,6 +179,14 @@ if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("See
 
     UsuarioSeeder.Seed(dbContext, securityService, emailDoCoordenador, emailDoProfessorDeExemplo, senhaInicial);
     await CategoriaSeeder.SeedAsync(dbContext);
+
+    if (builder.Configuration.GetValue<bool>("Seed:DadosDeDemonstracao"))
+    {
+        var relogio = scope.ServiceProvider.GetRequiredService<IRelogio>();
+        var senhaDosProfessores = builder.Configuration["Seed:SenhaDosProfessoresDeDemonstracao"] ?? "professor123";
+        var resumo = await DadosDeDemonstracaoSeeder.SeedAsync(dbContext, securityService, relogio.HojeNoBrasil(), senhaDosProfessores);
+        app.Logger.LogInformation("Dados de demonstração: {Resumo}", resumo);
+    }
 }
 
 app.UseStaticFiles();
