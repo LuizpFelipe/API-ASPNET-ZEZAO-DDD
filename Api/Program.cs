@@ -68,6 +68,10 @@ builder.Services.AddScoped<ICampeonatoService, CampeonatoService>();
 builder.Services.AddScoped<IPresencaRepository, PresencaRepository>();
 builder.Services.AddScoped<IPresencaService, PresencaService>();
 
+builder.Services.AddScoped<IFinanceiroService, FinanceiroService>();
+builder.Services.AddScoped<IAvisoCobrancaRepository, AvisoCobrancaRepository>();
+builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
+
 builder.Services.AddSingleton<IRelogio, RelogioBrasil>();
 builder.Services.AddSingleton(builder.Configuration.GetSection("Presenca").Get<ConfiguracoesPresenca>()
     ?? new ConfiguracoesPresenca());
