@@ -150,7 +150,7 @@ catch (Exception excecao)
     app.Logger.LogWarning(excecao, "Não foi possível padronizar os dias da semana das turmas. Aplique as migrations e reinicie.");
 }
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Swagger:Habilitado"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
