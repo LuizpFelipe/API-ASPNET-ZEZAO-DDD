@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Itens de Solução/">
+    <File Path="Dockerfile" />
+  </Folder>
   <Project Path="Api/Api.csproj" />
   <Project Path="Application/Application.csproj" />
   <Project Path="Domain/Domain.csproj" />
