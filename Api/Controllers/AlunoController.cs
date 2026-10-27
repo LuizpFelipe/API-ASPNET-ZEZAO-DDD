@@ -13,6 +13,8 @@ namespace Api.Controllers;
 [Authorize]
 public class AlunosController : ControllerBase
 {
+    private const long LimiteDaRequisicaoEmBytes = 6 * 1024 * 1024;
+
     private readonly IAlunoService _alunoService;
     private readonly IArmazenamentoArquivoService _armazenamentoService;
 
@@ -40,9 +42,12 @@ public class AlunosController : ControllerBase
     }
 
     [Authorize(Roles = "Coordenador")]
+    [RequestSizeLimit(LimiteDaRequisicaoEmBytes)]
     [HttpPost]
     public async Task<IActionResult> Post([FromForm] CriarAlunoRequestDTO dto, IFormFile? foto)
     {
+        dto.FotoUrl = null;
+
         var erroDaFoto = ValidadorDeFoto.Validar(foto);
         if (erroDaFoto != null)
             return BadRequest(new AlunoResponseDTO { Status = false, Message = erroDaFoto });
@@ -60,9 +65,12 @@ public class AlunosController : ControllerBase
     }
 
     [Authorize(Roles = "Coordenador")]
+    [RequestSizeLimit(LimiteDaRequisicaoEmBytes)]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Put(Guid id, [FromForm] AtualizarAlunoRequestDTO dto, IFormFile? foto)
     {
+        dto.FotoUrl = null;
+
         var erroDaFoto = ValidadorDeFoto.Validar(foto);
         if (erroDaFoto != null)
             return BadRequest(new AlunoResponseDTO { Status = false, Message = erroDaFoto });

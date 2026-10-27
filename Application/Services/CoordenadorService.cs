@@ -10,6 +10,7 @@ namespace Application.Services
 {
     public class CoordenadorService : ICoordenadorService
     {
+        private const int TamanhoMinimoDaSenha = 6;
         private readonly ICoordenadorRepository _coordenadorRepository;
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly ISecurityService _securityService;
@@ -49,6 +50,9 @@ namespace Application.Services
 
             if (string.IsNullOrWhiteSpace(dto.Senha))
                 return Falha("A senha é obrigatória.");
+
+            if (dto.Senha.Length < TamanhoMinimoDaSenha)
+                return Falha($"A senha precisa ter pelo menos {TamanhoMinimoDaSenha} caracteres.");
 
              if (!TentarNormalizarEmail(dto.Email, out var email))
                 return Falha("E-mail inválido.");
