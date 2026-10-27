@@ -13,6 +13,7 @@ public class ContratoDataDTO
 {
     public Guid Id { get; set; }
     public Guid AlunoId { get; set; }
+    public string? AlunoNome { get; set; }
     public DateOnly DataInicio { get; set; }
     public DateOnly DataFim { get; set; }
     public decimal ValorParcela { get; set; }

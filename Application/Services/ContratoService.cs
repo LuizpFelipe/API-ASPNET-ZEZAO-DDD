@@ -68,8 +68,14 @@ public class ContratoService : IContratoService
 
     public async Task<ContratoResponseDTO> ListarAsync()
     {
-        var contratos = await _contratoRepository.ObterTodosAsync();
-        return new ContratoResponseDTO { Status = true, Data = contratos.Select(Mapear).ToList() };
+        var contratos = (await _contratoRepository.ObterTodosAsync()).ToList();
+        var nomesDosAlunos = await _alunoRepository.ObterNomesPorIdsAsync(contratos.Select(contrato => contrato.AlunoId));
+
+        return new ContratoResponseDTO
+        {
+            Status = true,
+            Data = contratos.Select(contrato => Mapear(contrato, nomesDosAlunos.GetValueOrDefault(contrato.AlunoId))).ToList()
+        };
     }
 
     public async Task<ContratoResponseDTO> ObterPorIdAsync(Guid id)
@@ -123,10 +129,11 @@ public class ContratoService : IContratoService
         return new ContratoResponseDTO { Status = true, Message = "PDF gerado com sucesso.", Data = pdf };
     }
 
-    private static ContratoDataDTO Mapear(Contrato contrato) => new ContratoDataDTO
+    private static ContratoDataDTO Mapear(Contrato contrato, string? alunoNome = null) => new ContratoDataDTO
     {
         Id = contrato.Id,
         AlunoId = contrato.AlunoId,
+        AlunoNome = alunoNome,
         DataInicio = contrato.DataInicio,
         DataFim = contrato.DataFim,
         ValorParcela = contrato.ValorParcela,
