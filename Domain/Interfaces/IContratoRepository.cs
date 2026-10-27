@@ -8,4 +8,5 @@ public interface IContratoRepository
     Task<Contrato?> ObterPorIdAsync(Guid id);
     Task AdicionarAsync(Contrato contrato);
     Task AtualizarAsync(Contrato contrato);
+    Task<bool> ExisteContratoAtivoDoAlunoAsync(Guid alunoId);
 }

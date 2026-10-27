@@ -13,6 +13,7 @@ using Infrastructure.Services;
 using Infrastructure.Storage;
 using Infrastructure.Time;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -191,6 +192,17 @@ if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("See
 
 app.UseStaticFiles();
 app.UseCors("PoliticaDoFront");
+
+app.UseExceptionHandler(aplicacaoDeErro => aplicacaoDeErro.Run(async contexto =>
+{
+    contexto.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    await contexto.Response.WriteAsJsonAsync(new
+    {
+        Message = "Erro interno ao processar a requisição. Tente novamente.",
+        Status = false,
+        Data = (object?)null
+    });
+}));
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -9,6 +9,7 @@ namespace Application.Services
 {
     public class ProfessorService : IProfessorService
     {
+        private const int TamanhoMinimoDaSenha = 6;
         private const string MensagemEmailInvalido = "E-mail inválido.";
         private const string MensagemEmailJaCadastrado = "Já existe um usuário com este e-mail.";
         private const string MensagemNomeUsuarioJaCadastrado = "Já existe um usuário com esse nome de usuário.";
@@ -68,6 +69,12 @@ namespace Application.Services
             if (string.IsNullOrWhiteSpace(dto.Senha))
                 return Falha("A senha é obrigatória.");
 
+            if (dto.Senha.Length < TamanhoMinimoDaSenha)
+                return Falha($"A senha precisa ter pelo menos {TamanhoMinimoDaSenha} caracteres.");
+
+            if (string.IsNullOrWhiteSpace(dto.Telefone))
+                return Falha("O telefone é obrigatório.");
+
             if (!Usuario.TentarNormalizarEmail(dto.Email, out var email))
                 return Falha(MensagemEmailInvalido);
 
@@ -98,6 +105,12 @@ namespace Application.Services
             var professor = await _professorRepository.ObterPorIdAsync(id);
             if (professor == null) return Falha("Professor não encontrado");
 
+            if (string.IsNullOrWhiteSpace(dto.Nome))
+                return Falha("O nome é obrigatório.");
+
+            if (string.IsNullOrWhiteSpace(dto.Telefone))
+                return Falha("O telefone é obrigatório.");
+
             if (!Usuario.TentarNormalizarEmail(dto.Email, out var email))
                 return Falha(MensagemEmailInvalido);
 
@@ -111,7 +124,7 @@ namespace Application.Services
             usuario.AlterarEmail(email);
             await _usuarioRepository.AtualizarAsync(usuario);
 
-            professor.AtualizarDetalhes(dto.Nome, dto.Telefone);
+            professor.AtualizarDetalhes(dto.Nome.Trim(), dto.Telefone);
             await _professorRepository.AtualizarAsync(professor);
 
             return new ProfessorResponseDTO

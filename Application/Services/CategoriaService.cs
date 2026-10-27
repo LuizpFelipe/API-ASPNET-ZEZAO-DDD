@@ -45,6 +45,12 @@ namespace Application.Services
 
         public async Task<CategoriaResponseDTO> CriarAsync(CriarCategoriaRequestDTO dto)
         {
+            var mensagemDeDadosInvalidos = ValidarDadosDaCategoria(dto.Nome, dto.IdadeMin, dto.IdadeMax);
+            if (mensagemDeDadosInvalidos != null)
+            {
+                return new CategoriaResponseDTO { Status = false, Message = mensagemDeDadosInvalidos };
+            }
+
             if (await _repository.ExisteSobreposicaoDeIdadeAsync(dto.IdadeMin, dto.IdadeMax))
             {
                 return new CategoriaResponseDTO { Status = false, Message = "A faixa de idade se sobrepõe a uma categoria existente." };
@@ -69,6 +75,12 @@ namespace Application.Services
                 return new CategoriaResponseDTO { Status = false, Message = "Categoria não encontrada." };
             }
 
+            var mensagemDeDadosInvalidos = ValidarDadosDaCategoria(dto.Nome, dto.IdadeMin, dto.IdadeMax);
+            if (mensagemDeDadosInvalidos != null)
+            {
+                return new CategoriaResponseDTO { Status = false, Message = mensagemDeDadosInvalidos };
+            }
+
             if (await _repository.ExisteSobreposicaoDeIdadeAsync(dto.IdadeMin, dto.IdadeMax, id))
             {
                 return new CategoriaResponseDTO { Status = false, Message = "A faixa de idade se sobrepõe a outra categoria existente." };
@@ -83,6 +95,15 @@ namespace Application.Services
                 Message = "Categoria atualizada com sucesso.",
                 Data = new CategoriaDataDTO { Id = categoria.Id, Nome = categoria.Nome, IdadeMin = categoria.IdadeMin, IdadeMax = categoria.IdadeMax }
             };
+        }
+
+        private static string? ValidarDadosDaCategoria(string? nome, int idadeMin, int idadeMax)
+        {
+            if (string.IsNullOrWhiteSpace(nome)) return "O nome da categoria é obrigatório.";
+            if (idadeMin < 0 || idadeMax < 0) return "As idades não podem ser negativas.";
+            if (idadeMin > idadeMax) return "A idade mínima não pode ser maior que a idade máxima.";
+
+            return null;
         }
 
         public async Task<CategoriaResponseDTO> RemoverAsync(Guid id)

@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Request;
 using Application.Response;
+using Application.Validacoes;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Utilitarios;
@@ -56,6 +57,10 @@ namespace Application.Services
 
         public async Task<TurmaResponseDTO> CriarAsync(CriarTurmaRequestDTO dto)
         {
+            var mensagemDeDadosInvalidos = ValidarNomeEHorario(dto.Nome, dto.Horario);
+            if (mensagemDeDadosInvalidos != null)
+                return new TurmaResponseDTO { Status = false, Message = mensagemDeDadosInvalidos };
+
             if (!DiasDaSemana.EhValido(dto.DiasSemana))
                 return new TurmaResponseDTO { Status = false, Message = MensagemDiasInvalidos };
 
@@ -72,6 +77,10 @@ namespace Application.Services
         {
             var turma = await _turmaRepository.ObterPorIdAsync(id);
             if (turma == null) return new TurmaResponseDTO { Status = false, Message = "Turma não encontrada" };
+
+            var mensagemDeDadosInvalidos = ValidarNomeEHorario(dto.Nome, dto.Horario);
+            if (mensagemDeDadosInvalidos != null)
+                return new TurmaResponseDTO { Status = false, Message = mensagemDeDadosInvalidos };
 
             if (!DiasDaSemana.EhValido(dto.DiasSemana))
                 return new TurmaResponseDTO { Status = false, Message = MensagemDiasInvalidos };
@@ -100,6 +109,14 @@ namespace Application.Services
 
             await _turmaRepository.RemoverAsync(turma);
             return new TurmaResponseDTO { Status = true, Message = "Removida com sucesso" };
+        }
+
+        private static string? ValidarNomeEHorario(string? nome, string? horario)
+        {
+            if (string.IsNullOrWhiteSpace(nome)) return "Informe o nome da turma.";
+            if (!HorarioValidador.EhValido(horario)) return "Horário inválido. Use um formato como 17h, 17h30 ou 17:30.";
+
+            return null;
         }
 
         private async Task<string?> ValidarCategoriaEProfessorAsync(Guid categoriaId, Guid professorId)

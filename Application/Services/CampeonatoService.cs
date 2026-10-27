@@ -6,6 +6,7 @@ using Application.Interfaces;
 using Application.Request;
 using Application.Response;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 
 namespace Application.Services
@@ -47,6 +48,12 @@ namespace Application.Services
 
         public async Task<CampeonatoResponseDTO> CriarAsync(CriarCampeonatoRequestDTO dto)
         {
+            var mensagemDeDadosInvalidos = ValidarDadosDoCampeonato(dto.Nome, dto.Data);
+            if (mensagemDeDadosInvalidos != null)
+            {
+                return new CampeonatoResponseDTO { Status = false, Message = mensagemDeDadosInvalidos };
+            }
+
             if (await _categoriaRepository.ObterPorIdAsync(dto.CategoriaId) == null)
             {
                 return new CampeonatoResponseDTO { Status = false, Message = "Categoria não encontrada." };
@@ -71,6 +78,12 @@ namespace Application.Services
                 return new CampeonatoResponseDTO { Status = false, Message = "Campeonato não encontrado." };
             }
 
+            var mensagemDeDadosInvalidos = ValidarDadosDoCampeonato(dto.Nome, dto.Data);
+            if (mensagemDeDadosInvalidos != null)
+            {
+                return new CampeonatoResponseDTO { Status = false, Message = mensagemDeDadosInvalidos };
+            }
+
             if (await _categoriaRepository.ObterPorIdAsync(dto.CategoriaId) == null)
             {
                 return new CampeonatoResponseDTO { Status = false, Message = "Categoria não encontrada." };
@@ -85,6 +98,14 @@ namespace Application.Services
                 Message = "Campeonato atualizado com sucesso.",
                 Data = MapearCampeonato(campeonato)
             };
+        }
+
+        private static string? ValidarDadosDoCampeonato(string? nome, DateOnly data)
+        {
+            if (string.IsNullOrWhiteSpace(nome)) return "Informe o nome do campeonato.";
+            if (data == default) return "Informe a data do campeonato.";
+
+            return null;
         }
 
         public async Task<CampeonatoResponseDTO> RemoverAsync(Guid id)
@@ -102,14 +123,32 @@ namespace Application.Services
 
         public async Task<ParticipacaoCampeonatoResponseDTO> InscreverAlunoAsync(Guid campeonatoId, InscreverAlunoCampeonatoRequestDTO dto)
         {
-            if (await _repository.ObterPorIdAsync(campeonatoId) == null)
+            var campeonato = await _repository.ObterPorIdAsync(campeonatoId);
+            if (campeonato == null)
             {
                 return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "Campeonato não encontrado." };
             }
 
-            if (await _alunoRepository.ObterPorIdAsync(dto.AlunoId) == null)
+            var aluno = await _alunoRepository.ObterPorIdAsync(dto.AlunoId);
+            if (aluno == null)
             {
                 return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "Aluno não encontrado." };
+            }
+
+            if (aluno.Status == StatusAluno.Inativo)
+            {
+                return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "Aluno inativo não pode ser inscrito." };
+            }
+
+            if (aluno.CategoriaId != campeonato.CategoriaId)
+            {
+                return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "O aluno não pertence à categoria deste campeonato." };
+            }
+
+            var participacoesExistentes = await _repository.ObterParticipacoesPorCampeonatoAsync(campeonatoId);
+            if (participacoesExistentes.Any(participacaoExistente => participacaoExistente.AlunoId == dto.AlunoId))
+            {
+                return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "O aluno já está inscrito neste campeonato." };
             }
 
             var participacao = new ParticipacaoCampeonato(campeonatoId, dto.AlunoId, dto.Posicao);
@@ -129,6 +168,21 @@ namespace Application.Services
             if (participacao == null)
             {
                 return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "Participação não encontrada." };
+            }
+
+            if (dto.JogosDisputados < 0)
+            {
+                return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "Os jogos disputados não podem ser negativos." };
+            }
+
+            if (dto.Aproveitamento < 0 || dto.Aproveitamento > 100)
+            {
+                return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "O aproveitamento deve estar entre 0 e 100." };
+            }
+
+            if (dto.Posicao != null && dto.Posicao.Length > 20)
+            {
+                return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "A posição deve ter no máximo 20 caracteres." };
             }
 
             participacao.Atualizar(dto.Posicao, dto.JogosDisputados, dto.Aproveitamento);

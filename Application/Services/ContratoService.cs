@@ -31,6 +31,16 @@ public class ContratoService : IContratoService
 
     public async Task<ContratoResponseDTO> CriarAsync(Guid alunoId)
     {
+        var aluno = await _alunoRepository.ObterPorIdAsync(alunoId);
+        if (aluno == null)
+            return new ContratoResponseDTO { Status = false, Message = "Aluno não encontrado." };
+
+        if (aluno.Status == StatusAluno.Inativo)
+            return new ContratoResponseDTO { Status = false, Message = "Não é possível criar contrato para um aluno inativo." };
+
+        if (await _contratoRepository.ExisteContratoAtivoDoAlunoAsync(alunoId))
+            return new ContratoResponseDTO { Status = false, Message = "O aluno já possui um contrato ativo." };
+
         var dataInicio = DateOnly.FromDateTime(DateTime.Now);
         var dataFim = dataInicio.AddYears(1);
 
