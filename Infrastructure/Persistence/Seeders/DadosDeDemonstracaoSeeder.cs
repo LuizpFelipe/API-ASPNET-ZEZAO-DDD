@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Application.Campeonatos;
+using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 using Infrastructure.Context;
@@ -12,10 +13,12 @@ namespace Infrastructure.Persistence.Seeders
         private const string NomeDeUsuarioDeControle = "prof.carlos";
         private const decimal ValorDaParcela = 150m;
         private const int QuantidadeDeParcelas = 12;
-        private const int AlunosPorCategoria = 10;
+        private const int AlunosPorCategoria = 15;
         private const int TurmasPorCategoria = 2;
         private const int SemanasDeHistoricoDePresenca = 8;
-        private const int AlunosPorTimeNoCampeonato = 4;
+        private const int AlunosPorTimeNoCampeonato = 5;
+        private const string PrefixoCopa = "Copa Zezão ";
+        private const string PrefixoTorneio = "Torneio Interclasses ";
 
         private static readonly string[] NomesDosProfessores =
         {
@@ -79,7 +82,7 @@ namespace Infrastructure.Persistence.Seeders
         {
             if (await contexto.Usuarios.AnyAsync(usuario => usuario.NomeUsuario == NomeDeUsuarioDeControle))
             {
-                return "Dados de demonstração já existem. Nada foi criado.";
+                return await CompletarAsync(contexto, hoje);
             }
 
             var categorias = await GarantirCategoriasAsync(contexto);
@@ -216,17 +219,23 @@ namespace Infrastructure.Persistence.Seeders
             List<Aluno> alunos,
             List<Contrato> contratos,
             List<Parcela> parcelas,
-            Dictionary<Guid, double> taxaDePresencaPorAluno)
+            Dictionary<Guid, double> taxaDePresencaPorAluno,
+            Dictionary<Guid, int>? jaExistentesPorCategoria = null,
+            int indiceInicial = 0,
+            HashSet<(string Nome, DateOnly Nascimento)>? nomesJaUsados = null)
         {
             var taxasDePresenca = new[] { 0.35, 0.50, 0.70, 0.90, 0.97 };
-            var indiceDoAluno = 0;
+            var indiceDoAluno = indiceInicial;
+            nomesJaUsados ??= new HashSet<(string, DateOnly)>();
 
             foreach (var categoria in categorias)
             {
                 var turmasDaCategoria = turmas.Where(turma => turma.CategoriaId == categoria.Id).ToList();
                 var quantidadeDeIdades = categoria.IdadeMax - categoria.IdadeMin + 1;
 
-                for (var indiceNaCategoria = 0; indiceNaCategoria < AlunosPorCategoria; indiceNaCategoria++)
+                var jaExistentes = jaExistentesPorCategoria != null && jaExistentesPorCategoria.TryGetValue(categoria.Id, out var quantidade) ? quantidade : 0;
+
+                for (var indiceNaCategoria = jaExistentes; indiceNaCategoria < AlunosPorCategoria; indiceNaCategoria++)
                 {
                     var idade = categoria.IdadeMin + indiceNaCategoria % quantidadeDeIdades;
                     var dataDeNascimento = hoje.AddYears(-idade).AddDays(-((indiceDoAluno * 37) % 360));
@@ -239,12 +248,19 @@ namespace Infrastructure.Persistence.Seeders
                         segundoSobrenome = Sobrenomes[(indiceDoAluno * 5 + 4) % Sobrenomes.Length];
                     }
 
+                    var nomeCompleto = $"{primeiroNome} {primeiroSobrenome} {segundoSobrenome}";
+                    if (!nomesJaUsados.Add((nomeCompleto, dataDeNascimento)))
+                    {
+                        indiceDoAluno++;
+                        continue;
+                    }
+
                     var nomeDoResponsavel = NomesDosResponsaveis[(indiceDoAluno * 3) % NomesDosResponsaveis.Length];
                     var telefone = $"(11) 9{1000 + (indiceDoAluno * 137) % 9000}-{1000 + (indiceDoAluno * 251) % 9000}";
                     var endereco = $"{Ruas[indiceDoAluno % Ruas.Length]}, {10 + (indiceDoAluno * 13) % 890} - {Bairros[(indiceDoAluno * 3) % Bairros.Length]}";
 
                     var aluno = new Aluno(
-                        $"{primeiroNome} {primeiroSobrenome} {segundoSobrenome}",
+                        nomeCompleto,
                         dataDeNascimento,
                         (NivelTecnico)(indiceDoAluno % 3),
                         null,
@@ -253,7 +269,8 @@ namespace Infrastructure.Persistence.Seeders
                         telefone,
                         endereco,
                         turmasDaCategoria[indiceNaCategoria % turmasDaCategoria.Count].Id,
-                        categoria.Id);
+                        categoria.Id,
+                        (PosicaoJogador)(indiceNaCategoria % 5));
 
                     var cenario = EscolherCenario(indiceDoAluno, hoje);
                     var dataDeInicio = cenario.PrimeiroVencimento.AddDays(-10);
@@ -429,55 +446,202 @@ namespace Infrastructure.Persistence.Seeders
         {
             var quantidadeDeCampeonatos = 0;
             var indiceDaCategoria = 0;
+            var aleatorio = new Random(2026);
 
-            foreach (var categoria in categorias)
+            foreach (var categoria in categorias.OrderBy(categoria => categoria.IdadeMin))
             {
-                var alunosDaCategoria = alunos
-                    .Where(aluno => aluno.CategoriaId == categoria.Id && aluno.Status != StatusAluno.Inativo)
+                var idsElegiveis = ElegibilidadeDeCategoria.ObterCategoriasElegiveis(categoria, categorias);
+                var alunosElegiveis = alunos
+                    .Where(aluno => idsElegiveis.Contains(aluno.CategoriaId) && aluno.Status != StatusAluno.Inativo && aluno.Posicao.HasValue)
                     .ToList();
 
+                var alunosDaCategoria = alunosElegiveis.Where(aluno => aluno.CategoriaId == categoria.Id).ToList();
                 if (alunosDaCategoria.Count < AlunosPorTimeNoCampeonato * 2) continue;
 
                 var campeonatoRealizado = new Campeonato(
-                    $"Copa Zezão {categoria.Nome} {hoje.Year}",
+                    $"{PrefixoCopa}{categoria.Nome} {hoje.Year}",
                     hoje.AddDays(-30 - indiceDaCategoria * 3),
                     categoria.Id);
                 var campeonatoAgendado = new Campeonato(
-                    $"Torneio Interclasses {categoria.Nome}",
+                    $"{PrefixoTorneio}{categoria.Nome}",
                     hoje.AddDays(20 + indiceDaCategoria * 3),
                     categoria.Id);
                 contexto.Set<Campeonato>().AddRange(campeonatoRealizado, campeonatoAgendado);
                 quantidadeDeCampeonatos += 2;
 
-                for (var ordem = 0; ordem < alunosDaCategoria.Count; ordem++)
+                SimularCampeonatoFinalizado(contexto, campeonatoRealizado, alunosDaCategoria, aleatorio);
+
+                // O torneio agendado fica só com as inscrições (inclui a categoria abaixo), sem times, para demonstrar a criação.
+                foreach (var aluno in alunosElegiveis.Take(alunosElegiveis.Count - alunosElegiveis.Count % 2))
                 {
-                    var aluno = alunosDaCategoria[ordem];
-                    var time = ordem / AlunosPorTimeNoCampeonato;
-
-                    var posicao = time switch
-                    {
-                        0 => "Campeão",
-                        1 => "Vice-campeão",
-                        2 => "3º lugar",
-                        _ => "Fase de grupos"
-                    };
-                    var jogosDisputados = time <= 1 ? 6 : time == 2 ? 5 : 3;
-                    var aproveitamentoBase = time switch { 0 => 90, 1 => 75, 2 => 60, _ => 35 };
-
-                    var participacaoRealizada = new ParticipacaoCampeonato(campeonatoRealizado.Id, aluno.Id, posicao);
-                    participacaoRealizada.Atualizar(posicao, jogosDisputados, aproveitamentoBase + (ordem % 3) * 3);
-                    contexto.Set<ParticipacaoCampeonato>().Add(participacaoRealizada);
-
-                    if (ordem % 5 != 4)
-                    {
-                        contexto.Set<ParticipacaoCampeonato>().Add(new ParticipacaoCampeonato(campeonatoAgendado.Id, aluno.Id, null));
-                    }
+                    contexto.Set<ParticipacaoCampeonato>().Add(new ParticipacaoCampeonato(campeonatoAgendado.Id, aluno.Id, null));
                 }
 
                 indiceDaCategoria++;
             }
 
             return quantidadeDeCampeonatos;
+        }
+
+        private static void SimularCampeonatoFinalizado(AppDbContext contexto, Campeonato campeonato, List<Aluno> inscritos, Random aleatorio)
+        {
+            var candidatos = inscritos.Select(aluno => new CandidatoAoSorteio(aluno.Id, aluno.Posicao!.Value)).ToList();
+            var sorteio = SorteioDeEquipes.Sortear(candidatos, null, aleatorio);
+            if (sorteio.Erro != null || sorteio.Equipes.Count < 2) return;
+
+            var participacoes = new Dictionary<Guid, ParticipacaoCampeonato>();
+            foreach (var aluno in inscritos)
+            {
+                var participacao = new ParticipacaoCampeonato(campeonato.Id, aluno.Id, null);
+                participacoes[aluno.Id] = participacao;
+                contexto.Set<ParticipacaoCampeonato>().Add(participacao);
+            }
+
+            var equipes = new List<EquipeCampeonato>();
+            var jogadoresPorEquipe = new Dictionary<Guid, List<Aluno>>();
+            for (var indice = 0; indice < sorteio.Equipes.Count; indice++)
+            {
+                var equipe = new EquipeCampeonato(campeonato.Id, $"Time {indice + 1}");
+                equipes.Add(equipe);
+                jogadoresPorEquipe[equipe.Id] = new List<Aluno>();
+
+                foreach (var alunoId in sorteio.Equipes[indice])
+                {
+                    participacoes[alunoId].DefinirEquipe(equipe.Id);
+                    jogadoresPorEquipe[equipe.Id].Add(inscritos.First(aluno => aluno.Id == alunoId));
+                }
+            }
+            contexto.Set<EquipeCampeonato>().AddRange(equipes);
+
+            var jogos = new List<JogoCampeonato>();
+            foreach (var planejado in ChaveamentoMataMata.Gerar(equipes.Select(equipe => equipe.Id).ToList(), aleatorio))
+            {
+                var jogo = new JogoCampeonato(campeonato.Id, planejado.Fase, planejado.Ordem);
+                if (planejado.EquipeAId.HasValue) jogo.DefinirEquipe(true, planejado.EquipeAId.Value);
+                if (planejado.EquipeBId.HasValue) jogo.DefinirEquipe(false, planejado.EquipeBId.Value);
+                jogos.Add(jogo);
+            }
+
+            foreach (var jogoComBye in jogos.Where(jogo => jogo.Fase == 1 && (jogo.EquipeAId == null) != (jogo.EquipeBId == null)).ToList())
+            {
+                jogoComBye.FinalizarPorBye((jogoComBye.EquipeAId ?? jogoComBye.EquipeBId)!.Value);
+                ChaveamentoMataMata.Avancar(jogos, jogoComBye);
+            }
+
+            var estatisticas = new List<EstatisticaJogo>();
+            while (true)
+            {
+                var proximo = jogos
+                    .Where(jogo => jogo.Status == StatusJogo.Pendente)
+                    .OrderBy(jogo => jogo.Fase).ThenBy(jogo => jogo.Ordem)
+                    .FirstOrDefault();
+                if (proximo == null) break;
+
+                var linhas = new List<(Guid EquipeId, Aluno Aluno, int Gols, int Assistencias, int Passes, int Desarmes, int Defesas, int Faltas, int Amarelos, int Vermelhos)>();
+                foreach (var equipeId in new[] { proximo.EquipeAId!.Value, proximo.EquipeBId!.Value })
+                {
+                    foreach (var aluno in jogadoresPorEquipe[equipeId])
+                    {
+                        var ehGoleiro = aluno.Posicao == PosicaoJogador.Goleiro;
+                        var ehPivo = aluno.Posicao == PosicaoJogador.Pivo;
+                        linhas.Add((
+                            equipeId, aluno,
+                            ehGoleiro ? 0 : (aleatorio.Next(0, 100) < (ehPivo ? 45 : 25) ? aleatorio.Next(1, 3) : 0),
+                            aleatorio.Next(0, 100) < 25 ? 1 : 0,
+                            aleatorio.Next(6, 25),
+                            ehGoleiro ? 0 : aleatorio.Next(0, 5),
+                            ehGoleiro ? aleatorio.Next(2, 9) : 0,
+                            aleatorio.Next(0, 4),
+                            aleatorio.Next(0, 100) < 10 ? 1 : 0,
+                            aleatorio.Next(0, 100) < 2 ? 1 : 0));
+                    }
+                }
+
+                int GolsDe(Guid equipeId) => linhas.Where(linha => linha.EquipeId == equipeId).Sum(linha => linha.Gols);
+                if (GolsDe(proximo.EquipeAId!.Value) == GolsDe(proximo.EquipeBId!.Value))
+                {
+                    var indiceDoArtilheiro = linhas.FindIndex(linha => linha.EquipeId == proximo.EquipeAId && linha.Aluno.Posicao == PosicaoJogador.Pivo);
+                    var linhaDoGolDeOuro = linhas[indiceDoArtilheiro];
+                    linhas[indiceDoArtilheiro] = linhaDoGolDeOuro with { Gols = linhaDoGolDeOuro.Gols + 1 };
+                }
+
+                foreach (var linha in linhas)
+                {
+                    estatisticas.Add(new EstatisticaJogo(proximo.Id, linha.Aluno.Id, linha.Gols, linha.Assistencias,
+                        linha.Passes, linha.Desarmes, linha.Defesas, linha.Faltas, linha.Amarelos, linha.Vermelhos));
+                }
+
+                var golsA = GolsDe(proximo.EquipeAId!.Value);
+                var golsB = GolsDe(proximo.EquipeBId!.Value);
+                proximo.AtualizarPlacar(golsA, golsB);
+                proximo.Finalizar(golsA > golsB ? proximo.EquipeAId.Value : proximo.EquipeBId.Value);
+                ChaveamentoMataMata.Avancar(jogos, proximo);
+            }
+
+            contexto.Set<JogoCampeonato>().AddRange(jogos);
+            contexto.Set<EstatisticaJogo>().AddRange(estatisticas);
+        }
+
+        // Completa um banco já populado por uma versão anterior do seeder: posições, mais alunos e campeonatos com times e jogos.
+        private static async Task<string> CompletarAsync(AppDbContext contexto, DateOnly hoje)
+        {
+            var categorias = (await contexto.Set<Categoria>().ToListAsync()).OrderBy(categoria => categoria.IdadeMin).ToList();
+            var alunosExistentes = await contexto.Set<Aluno>().ToListAsync();
+
+            var posicoesDefinidas = 0;
+            foreach (var grupo in alunosExistentes.GroupBy(aluno => aluno.CategoriaId))
+            {
+                var indice = 0;
+                foreach (var aluno in grupo.OrderBy(a => a.NomeCompleto).ToList())
+                {
+                    if (aluno.Posicao == null)
+                    {
+                        DefinirValor(aluno, nameof(Aluno.Posicao), (PosicaoJogador)(indice % 5));
+                        posicoesDefinidas++;
+                    }
+                    indice++;
+                }
+            }
+
+            var jaExistentesPorCategoria = alunosExistentes.GroupBy(aluno => aluno.CategoriaId).ToDictionary(grupo => grupo.Key, grupo => grupo.Count());
+            var turmas = await contexto.Set<Turma>().ToListAsync();
+            var nomesJaUsados = alunosExistentes.Select(aluno => (aluno.NomeCompleto, aluno.DataNascimento)).ToHashSet();
+
+            var novosAlunos = new List<Aluno>();
+            var contratos = new List<Contrato>();
+            var parcelas = new List<Parcela>();
+            var taxaDePresencaPorAluno = new Dictionary<Guid, double>();
+            CriarAlunosComContratos(contexto, categorias, turmas, hoje, novosAlunos, contratos, parcelas,
+                taxaDePresencaPorAluno, jaExistentesPorCategoria, alunosExistentes.Count, nomesJaUsados);
+            await contexto.SaveChangesAsync();
+
+            if (novosAlunos.Count > 0)
+            {
+                contexto.Set<Presenca>().AddRange(CriarPresencas(turmas, novosAlunos, taxaDePresencaPorAluno, hoje).Values);
+                await contexto.SaveChangesAsync();
+            }
+
+            var quantidadeDeCampeonatos = 0;
+            if (!await contexto.Set<EquipeCampeonato>().AnyAsync())
+            {
+                var antigos = await contexto.Set<Campeonato>()
+                    .Where(campeonato => campeonato.Nome.StartsWith(PrefixoCopa) || campeonato.Nome.StartsWith(PrefixoTorneio))
+                    .ToListAsync();
+                contexto.Set<Campeonato>().RemoveRange(antigos);
+                await contexto.SaveChangesAsync();
+
+                var todosOsAlunos = alunosExistentes.Concat(novosAlunos).ToList();
+                quantidadeDeCampeonatos = CriarCampeonatos(contexto, categorias, todosOsAlunos, hoje);
+                await contexto.SaveChangesAsync();
+            }
+
+            if (posicoesDefinidas == 0 && novosAlunos.Count == 0 && quantidadeDeCampeonatos == 0)
+            {
+                return "Dados de demonstração já existem. Nada foi criado.";
+            }
+
+            return $"Dados de demonstração completados: {posicoesDefinidas} posições definidas, {novosAlunos.Count} alunos novos, " +
+                   $"{quantidadeDeCampeonatos} campeonatos recriados com times e jogos.";
         }
 
         private static string GerarCpfValido(int semente)

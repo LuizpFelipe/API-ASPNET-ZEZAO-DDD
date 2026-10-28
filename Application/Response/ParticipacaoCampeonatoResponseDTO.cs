@@ -17,5 +17,8 @@ namespace Application.Response
         public string? Posicao { get; set; }
         public int JogosDisputados { get; set; }
         public decimal Aproveitamento { get; set; }
+        public string? AlunoNome { get; set; }
+        public string? PosicaoDeJogo { get; set; }
+        public Guid? EquipeId { get; set; }
     }
 }

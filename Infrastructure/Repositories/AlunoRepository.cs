@@ -33,6 +33,15 @@ public class AlunoRepository : IAlunoRepository
             .ToDictionaryAsync(aluno => aluno.Id, aluno => aluno.NomeCompleto);
     }
 
+    public async Task<List<Aluno>> ObterPorIdsAsync(IEnumerable<Guid> alunoIds)
+    {
+        var identificadores = alunoIds.Distinct().ToList();
+
+        return await _context.Alunos
+            .Where(aluno => identificadores.Contains(aluno.Id))
+            .ToListAsync();
+    }
+
     public async Task<Aluno?> ObterPorIdAsync(Guid id)
     {
         return await _context.Alunos

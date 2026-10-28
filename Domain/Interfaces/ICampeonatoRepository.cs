@@ -16,5 +16,6 @@ namespace Domain.Interfaces
         Task<ParticipacaoCampeonato?> ObterParticipacaoPorIdAsync(Guid id);
         Task AtualizarParticipacaoAsync(ParticipacaoCampeonato participacao);
         Task<IEnumerable<ParticipacaoCampeonato>> ObterParticipacoesPorCampeonatoAsync(Guid campeonatoId);
+        Task<bool> PossuiJogosAsync(Guid campeonatoId);
     }
 }

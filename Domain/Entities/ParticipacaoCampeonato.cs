@@ -10,6 +10,7 @@ namespace Domain.Entities
         public string? Posicao { get; private set; }
         public int JogosDisputados { get; private set; }
         public decimal Aproveitamento { get; private set; }
+        public Guid? EquipeId { get; private set; }
 
         protected ParticipacaoCampeonato() { }
 
@@ -19,6 +20,11 @@ namespace Domain.Entities
             CampeonatoId = campeonatoId;
             AlunoId = alunoId;
             Posicao = posicao;
+        }
+
+        public void DefinirEquipe(Guid? equipeId)
+        {
+            EquipeId = equipeId;
         }
 
         public void Atualizar(string? posicao, int jogosDisputados, decimal aproveitamento)
