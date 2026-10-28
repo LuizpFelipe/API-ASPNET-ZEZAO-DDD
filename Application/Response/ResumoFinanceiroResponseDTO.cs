@@ -9,7 +9,7 @@
 
     public class ResumoFinanceiroData
     {
-        public decimal Recebido { get; set; }
+        public decimal RecebidoMes { get; set; }
         public decimal Pendente { get; set; }
         public decimal Inadimplencia { get; set; }
     }

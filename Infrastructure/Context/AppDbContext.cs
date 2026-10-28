@@ -18,9 +18,6 @@ namespace Infrastructure.Context
         public DbSet<Coordenador> Coordenadores => Set<Coordenador>();
         public DbSet<Campeonato> Campeonatos => Set<Campeonato>();
         public DbSet<ParticipacaoCampeonato> ParticipacoesCampeonato => Set<ParticipacaoCampeonato>();
-        public DbSet<EquipeCampeonato> EquipesCampeonato => Set<EquipeCampeonato>();
-        public DbSet<JogoCampeonato> JogosCampeonato => Set<JogoCampeonato>();
-        public DbSet<EstatisticaJogo> EstatisticasJogo => Set<EstatisticaJogo>();
         public DbSet<Contrato> Contratos => Set<Contrato>();
         public DbSet<Parcela> Parcelas => Set<Parcela>();
         public DbSet<Reposicao> Reposicoes => Set<Reposicao>();
