@@ -51,6 +51,9 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("Posicao")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ResponsavelCpf")
                         .HasMaxLength(11)
                         .HasColumnType("character varying(11)");
@@ -255,6 +258,124 @@ namespace Infrastructure.Migrations
                     b.ToTable("Coordenadores", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.EquipeCampeonato", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CampeonatoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampeonatoId", "Nome")
+                        .IsUnique();
+
+                    b.ToTable("EquipesCampeonato", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.EstatisticaJogo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlunoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Assistencias")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CartoesAmarelos")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CartoesVermelhos")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Defesas")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Desarmes")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Faltas")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Gols")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("JogoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("PassesCertos")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlunoId");
+
+                    b.HasIndex("JogoId", "AlunoId")
+                        .IsUnique();
+
+                    b.ToTable("EstatisticasJogo", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.JogoCampeonato", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Bye")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("CampeonatoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("EquipeAId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("EquipeBId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("EquipeVencedoraId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Fase")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GolsA")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GolsB")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EquipeAId");
+
+                    b.HasIndex("EquipeBId");
+
+                    b.HasIndex("EquipeVencedoraId");
+
+                    b.HasIndex("CampeonatoId", "Fase", "Ordem")
+                        .IsUnique();
+
+                    b.ToTable("JogosCampeonato", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Parcela", b =>
                 {
                     b.Property<Guid>("Id")
@@ -301,6 +422,9 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("CampeonatoId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("EquipeId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("JogosDisputados")
                         .HasColumnType("integer");
 
@@ -313,6 +437,8 @@ namespace Infrastructure.Migrations
                     b.HasIndex("AlunoId");
 
                     b.HasIndex("CampeonatoId");
+
+                    b.HasIndex("EquipeId");
 
                     b.ToTable("ParticipacoesCampeonato", (string)null);
                 });
@@ -543,6 +669,54 @@ namespace Infrastructure.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("Domain.Entities.EquipeCampeonato", b =>
+                {
+                    b.HasOne("Domain.Entities.Campeonato", null)
+                        .WithMany()
+                        .HasForeignKey("CampeonatoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.EstatisticaJogo", b =>
+                {
+                    b.HasOne("Domain.Entities.Aluno", null)
+                        .WithMany()
+                        .HasForeignKey("AlunoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.JogoCampeonato", null)
+                        .WithMany()
+                        .HasForeignKey("JogoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.JogoCampeonato", b =>
+                {
+                    b.HasOne("Domain.Entities.Campeonato", null)
+                        .WithMany()
+                        .HasForeignKey("CampeonatoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.EquipeCampeonato", null)
+                        .WithMany()
+                        .HasForeignKey("EquipeAId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Domain.Entities.EquipeCampeonato", null)
+                        .WithMany()
+                        .HasForeignKey("EquipeBId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Domain.Entities.EquipeCampeonato", null)
+                        .WithMany()
+                        .HasForeignKey("EquipeVencedoraId")
+                        .OnDelete(DeleteBehavior.NoAction);
+                });
+
             modelBuilder.Entity("Domain.Entities.Parcela", b =>
                 {
                     b.HasOne("Domain.Entities.Contrato", null)
@@ -565,6 +739,11 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("CampeonatoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Domain.Entities.EquipeCampeonato", null)
+                        .WithMany()
+                        .HasForeignKey("EquipeId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Domain.Entities.Presenca", b =>
