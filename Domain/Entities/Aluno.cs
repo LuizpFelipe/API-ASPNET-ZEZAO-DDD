@@ -17,12 +17,13 @@ public class Aluno
     public Guid TurmaId { get; private set; }
 
     public Guid CategoriaId { get; private set; }
+    public PosicaoJogador? Posicao { get; private set; }
     public Categoria? Categoria { get; private set; }
     public string? ResponsavelCpf { get; private set; }
 
     public Aluno(string nomeCompleto, DateOnly dataNascimento, NivelTecnico nivelTecnico,
                  string? fotoUrl, string responsavelNome, string responsavelCpf, string telefone,
-                 string endereco, Guid turmaId, Guid categoriaId)
+                 string endereco, Guid turmaId, Guid categoriaId, PosicaoJogador? posicao = null)
     {
         Id = Guid.NewGuid();
         NomeCompleto = nomeCompleto;
@@ -37,10 +38,11 @@ public class Aluno
         TurmaId = turmaId;
         CategoriaId = categoriaId;
         ResponsavelCpf = responsavelCpf;
+        Posicao = posicao;
     }
 
     public void AtualizarDados(string nomeCompleto, DateOnly dataNascimento, NivelTecnico nivelTecnico,
-                               string? fotoUrl, string responsavelNome, string responsavelCpf, string telefone, string endereco, Guid turmaId, Guid categoriaId)
+                               string? fotoUrl, string responsavelNome, string responsavelCpf, string telefone, string endereco, Guid turmaId, Guid categoriaId, PosicaoJogador? posicao = null)
     {
         NomeCompleto = nomeCompleto;
         DataNascimento = dataNascimento;
@@ -52,6 +54,7 @@ public class Aluno
         TurmaId = turmaId;
         CategoriaId = categoriaId;
         ResponsavelCpf = responsavelCpf;
+        if (posicao.HasValue) Posicao = posicao;
     }
 
     public void Desativar()

@@ -13,4 +13,5 @@ public class CriarAlunoRequestDTO
     public Guid TurmaId { get; set; }
     public string? FotoUrl { get; set; }
     public string ResponsavelCpf { get; set; } = string.Empty;
+    public PosicaoJogador? Posicao { get; set; }
 }

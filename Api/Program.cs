@@ -66,6 +66,8 @@ builder.Services.AddScoped<ICoordenadorRepository, CoordenadorRepository>();
 builder.Services.AddScoped<ICoordenadorService, CoordenadorService>();
 builder.Services.AddScoped<ICampeonatoRepository, CampeonatoRepository>();
 builder.Services.AddScoped<ICampeonatoService, CampeonatoService>();
+builder.Services.AddScoped<ICampeonatoCompeticaoRepository, CampeonatoCompeticaoRepository>();
+builder.Services.AddScoped<ICampeonatoCompeticaoService, CampeonatoCompeticaoService>();
 
 builder.Services.AddScoped<IPresencaRepository, PresencaRepository>();
 builder.Services.AddScoped<IPresencaService, PresencaService>();

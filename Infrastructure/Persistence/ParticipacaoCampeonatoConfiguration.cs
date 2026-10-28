@@ -21,6 +21,11 @@ namespace Infrastructure.Persistence
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
 
+            builder.HasOne<EquipeCampeonato>()
+                .WithMany()
+                .HasForeignKey(p => p.EquipeId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             builder.HasOne<Aluno>()
                 .WithMany()
                 .HasForeignKey(p => p.AlunoId)

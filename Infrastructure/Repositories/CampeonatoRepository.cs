@@ -45,6 +45,11 @@ namespace Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
+        public async Task<bool> PossuiJogosAsync(Guid campeonatoId)
+        {
+            return await _context.JogosCampeonato.AnyAsync(j => j.CampeonatoId == campeonatoId);
+        }
+
         public async Task AdicionarParticipacaoAsync(ParticipacaoCampeonato participacao)
         {
             await _context.ParticipacoesCampeonato.AddAsync(participacao);

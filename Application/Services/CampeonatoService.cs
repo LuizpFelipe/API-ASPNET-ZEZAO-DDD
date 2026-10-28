@@ -140,9 +140,22 @@ namespace Application.Services
                 return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "Aluno inativo não pode ser inscrito." };
             }
 
-            if (aluno.CategoriaId != campeonato.CategoriaId)
+            var categorias = (await _categoriaRepository.ObterTodasAsync()).ToList();
+            var categoriaDoCampeonato = categorias.FirstOrDefault(categoria => categoria.Id == campeonato.CategoriaId);
+            if (categoriaDoCampeonato == null
+                || !Application.Campeonatos.ElegibilidadeDeCategoria.ObterCategoriasElegiveis(categoriaDoCampeonato, categorias).Contains(aluno.CategoriaId))
             {
-                return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "O aluno não pertence à categoria deste campeonato." };
+                return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "O aluno precisa ser da categoria do campeonato ou da categoria imediatamente abaixo." };
+            }
+
+            if (aluno.Posicao == null)
+            {
+                return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "O aluno não tem posição cadastrada. Edite o aluno e escolha a posição." };
+            }
+
+            if (await _repository.PossuiJogosAsync(campeonatoId))
+            {
+                return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "Não é possível inscrever alunos depois que os jogos foram gerados." };
             }
 
             var participacoesExistentes = await _repository.ObterParticipacoesPorCampeonatoAsync(campeonatoId);
@@ -151,14 +164,14 @@ namespace Application.Services
                 return new ParticipacaoCampeonatoResponseDTO { Status = false, Message = "O aluno já está inscrito neste campeonato." };
             }
 
-            var participacao = new ParticipacaoCampeonato(campeonatoId, dto.AlunoId, dto.Posicao);
+            var participacao = new ParticipacaoCampeonato(campeonatoId, dto.AlunoId, null);
             await _repository.AdicionarParticipacaoAsync(participacao);
 
             return new ParticipacaoCampeonatoResponseDTO
             {
                 Status = true,
                 Message = "Aluno inscrito com sucesso.",
-                Data = MapearParticipacao(participacao)
+                Data = MapearParticipacao(participacao, aluno)
             };
         }
 
@@ -204,12 +217,13 @@ namespace Application.Services
             }
 
             var participacoes = await _repository.ObterParticipacoesPorCampeonatoAsync(campeonatoId);
+            var alunos = (await _alunoRepository.ObterPorIdsAsync(participacoes.Select(p => p.AlunoId))).ToDictionary(a => a.Id);
 
             return new ParticipacaoCampeonatoResponseDTO
             {
                 Status = true,
                 Message = "Participações recuperadas com sucesso.",
-                Data = participacoes.Select(MapearParticipacao).ToList()
+                Data = participacoes.Select(p => MapearParticipacao(p, alunos.GetValueOrDefault(p.AlunoId))).ToList()
             };
         }
 
@@ -221,14 +235,17 @@ namespace Application.Services
             CategoriaId = c.CategoriaId
         };
 
-        private static ParticipacaoCampeonatoDataDTO MapearParticipacao(ParticipacaoCampeonato p) => new ParticipacaoCampeonatoDataDTO
+        private static ParticipacaoCampeonatoDataDTO MapearParticipacao(ParticipacaoCampeonato p, Aluno? aluno = null) => new ParticipacaoCampeonatoDataDTO
         {
             Id = p.Id,
             CampeonatoId = p.CampeonatoId,
             AlunoId = p.AlunoId,
             Posicao = p.Posicao,
             JogosDisputados = p.JogosDisputados,
-            Aproveitamento = p.Aproveitamento
+            Aproveitamento = p.Aproveitamento,
+            AlunoNome = aluno?.NomeCompleto,
+            PosicaoDeJogo = Application.Campeonatos.NomesDePosicao.Obter(aluno?.Posicao),
+            EquipeId = p.EquipeId
         };
     }
 }

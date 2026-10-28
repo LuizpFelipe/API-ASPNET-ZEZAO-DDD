@@ -32,7 +32,7 @@ namespace Api.Controllers
             return Ok(response);
         }
 
-        [Authorize(Roles = "Coordenador")]
+        [Authorize(Roles = "Coordenador,Professor")]
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CriarCampeonatoRequestDTO dto)
         {
@@ -41,7 +41,7 @@ namespace Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = response.Data?.Id }, response);
         }
 
-        [Authorize(Roles = "Coordenador")]
+        [Authorize(Roles = "Coordenador,Professor")]
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Put(Guid id, [FromBody] AtualizarCampeonatoRequestDTO dto)
         {
@@ -50,7 +50,7 @@ namespace Api.Controllers
             return Ok(response);
         }
 
-        [Authorize(Roles = "Coordenador")]
+        [Authorize(Roles = "Coordenador,Professor")]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -59,6 +59,7 @@ namespace Api.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = "Coordenador,Professor")]
         [HttpPost("{id:guid}/participacoes")]
         public async Task<IActionResult> PostParticipacao(Guid id, [FromBody] InscreverAlunoCampeonatoRequestDTO dto)
         {
@@ -75,6 +76,7 @@ namespace Api.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = "Coordenador,Professor")]
         [HttpPut("~/api/Participacoes/{id:guid}")]
         public async Task<IActionResult> PutParticipacao(Guid id, [FromBody] AtualizarParticipacaoCampeonatoRequestDTO dto)
         {

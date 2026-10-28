@@ -68,6 +68,10 @@ namespace Application.Services
             if (mensagemDeErro != null)
                 return new TurmaResponseDTO { Status = false, Message = mensagemDeErro };
 
+            var mensagemDeConflito = await VerificarConflitoAsync(null, dto.Nome, dto.DiasSemana, dto.Horario, dto.CategoriaId, dto.ProfessorId);
+            if (mensagemDeConflito != null)
+                return new TurmaResponseDTO { Status = false, Message = mensagemDeConflito };
+
             var turma = new Turma(dto.Nome, DiasDaSemana.Padronizar(dto.DiasSemana), dto.Horario, dto.CategoriaId, dto.ProfessorId);
             await _turmaRepository.AdicionarAsync(turma);
             return new TurmaResponseDTO { Status = true, Message = "Turma criada com sucesso", Data = turma };
@@ -88,6 +92,10 @@ namespace Application.Services
             var mensagemDeErro = await ValidarCategoriaEProfessorAsync(dto.CategoriaId, dto.ProfessorId);
             if (mensagemDeErro != null)
                 return new TurmaResponseDTO { Status = false, Message = mensagemDeErro };
+
+            var mensagemDeConflito = await VerificarConflitoAsync(id, dto.Nome, dto.DiasSemana, dto.Horario, dto.CategoriaId, dto.ProfessorId);
+            if (mensagemDeConflito != null)
+                return new TurmaResponseDTO { Status = false, Message = mensagemDeConflito };
 
             turma.AtualizarDetalhes(dto.Nome, DiasDaSemana.Padronizar(dto.DiasSemana), dto.Horario, dto.CategoriaId, dto.ProfessorId);
             await _turmaRepository.AtualizarAsync(turma);
@@ -115,6 +123,23 @@ namespace Application.Services
         {
             if (string.IsNullOrWhiteSpace(nome)) return "Informe o nome da turma.";
             if (!HorarioValidador.EhValido(horario)) return "Horário inválido. Use um formato como 17h, 17h30 ou 17:30.";
+
+            return null;
+        }
+
+        private async Task<string?> VerificarConflitoAsync(Guid? ignorarId, string nome, string diasSemana, string horario, Guid categoriaId, Guid professorId)
+        {
+            var turmas = (await _turmaRepository.ObterTodasAsync()).Where(turma => turma.Id != ignorarId).ToList();
+            var diasInformados = DiasDaSemana.Converter(DiasDaSemana.Padronizar(diasSemana));
+
+            if (turmas.Any(turma => turma.CategoriaId == categoriaId
+                                    && string.Equals(turma.Nome?.Trim(), nome?.Trim(), StringComparison.OrdinalIgnoreCase)))
+                return "Já existe uma turma com esse nome nesta categoria.";
+
+            if (turmas.Any(turma => turma.ProfessorId == professorId
+                                    && string.Equals(turma.Horario?.Trim(), horario?.Trim(), StringComparison.OrdinalIgnoreCase)
+                                    && DiasDaSemana.Converter(turma.DiasSemana).Any(dia => diasInformados.Contains(dia))))
+                return "O professor já tem uma turma neste horário e dia da semana.";
 
             return null;
         }

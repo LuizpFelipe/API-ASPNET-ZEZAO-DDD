@@ -37,6 +37,11 @@ public class AlunoService : IAlunoService
             return new AlunoResponseDTO { Status = false, Message = mensagemDeDadosInvalidos };
         }
 
+        if (dto.Posicao == null || !Enum.IsDefined(dto.Posicao.Value))
+        {
+            return new AlunoResponseDTO { Status = false, Message = "Informe a posição em que o aluno joga." };
+        }
+
         var existe = await _alunoRepository.ExisteComMesmoNomeEDataNascimentoAsync(dto.NomeCompleto, dto.DataNascimento);
         var mensagemDoCpf = ValidarCpfDoResponsavel(dto.ResponsavelCpf, out var cpfDoResponsavel);
 
@@ -71,7 +76,7 @@ public class AlunoService : IAlunoService
 
         var aluno = new Aluno(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico,
                               dto.FotoUrl, dto.ResponsavelNome, cpfDoResponsavel, dto.Telefone,
-                              dto.Endereco, dto.TurmaId, categoria.Id);
+                              dto.Endereco, dto.TurmaId, categoria.Id, dto.Posicao);
 
         try
         {
@@ -108,6 +113,9 @@ public class AlunoService : IAlunoService
                                                            dto.ResponsavelNome, dto.Telefone, dto.Endereco);
         if (mensagemDeDadosInvalidos != null) return new AlunoResponseDTO { Status = false, Message = mensagemDeDadosInvalidos };
 
+        if (dto.Posicao.HasValue && !Enum.IsDefined(dto.Posicao.Value))
+            return new AlunoResponseDTO { Status = false, Message = "Posição inválida." };
+
         var mensagemDoCpf = ValidarCpfDoResponsavel(dto.ResponsavelCpf, out var cpfDoResponsavel);
         if (mensagemDoCpf != null) return new AlunoResponseDTO { Status = false, Message = mensagemDoCpf };
 
@@ -132,7 +140,7 @@ public class AlunoService : IAlunoService
             return new AlunoResponseDTO { Status = false, Message = $"A turma selecionada não é da categoria do aluno ({categoria.Nome})." };
         }
 
-        aluno.AtualizarDados(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico, dto.FotoUrl, dto.ResponsavelNome, cpfDoResponsavel, dto.Telefone, dto.Endereco, dto.TurmaId, categoria.Id);
+        aluno.AtualizarDados(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico, dto.FotoUrl, dto.ResponsavelNome, cpfDoResponsavel, dto.Telefone, dto.Endereco, dto.TurmaId, categoria.Id, dto.Posicao);
         await _alunoRepository.AtualizarAsync(aluno);
 
         return new AlunoResponseDTO { Status = true, Message = "Aluno atualizado com sucesso." };
