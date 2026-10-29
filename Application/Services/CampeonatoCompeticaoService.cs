@@ -11,6 +11,7 @@ namespace Application.Services
     public class CampeonatoCompeticaoService : ICampeonatoCompeticaoService
     {
         private const int JogadoresPorEquipe = 5;
+        private const int MaximoDeJogadoresNoModoLivre = 8;
         private const int LimiteDoNomeDaEquipe = 50;
         private const int LimiteDeUmaEstatistica = 999;
 
@@ -81,7 +82,12 @@ namespace Application.Services
                 return RespostaDaCompeticao<EquipeDTO>.Falha("Não é possível alterar os times depois que os jogos foram gerados.");
 
             var alunoIds = (dto.AlunoIds ?? new List<Guid>()).Distinct().ToList();
-            if (alunoIds.Count != JogadoresPorEquipe)
+            if (dto.ModoLivre)
+            {
+                if (alunoIds.Count < JogadoresPorEquipe || alunoIds.Count > MaximoDeJogadoresNoModoLivre)
+                    return RespostaDaCompeticao<EquipeDTO>.Falha($"No modo livre o time precisa de {JogadoresPorEquipe} a {MaximoDeJogadoresNoModoLivre} alunos.");
+            }
+            else if (alunoIds.Count != JogadoresPorEquipe)
                 return RespostaDaCompeticao<EquipeDTO>.Falha($"Cada time precisa de exatamente {JogadoresPorEquipe} alunos, um para cada posição.");
 
             var participacoes = await _competicaoRepository.ObterParticipacoesAsync(campeonatoId);
@@ -101,7 +107,7 @@ namespace Application.Services
                 return RespostaDaCompeticao<EquipeDTO>.Falha("Há aluno sem posição cadastrada. Edite o aluno e escolha a posição.");
 
             var posicoes = alunos.Select(aluno => aluno.Posicao!.Value).ToList();
-            if (posicoes.Distinct().Count() != JogadoresPorEquipe)
+            if (!dto.ModoLivre && posicoes.Distinct().Count() != JogadoresPorEquipe)
                 return RespostaDaCompeticao<EquipeDTO>.Falha("O time precisa ter uma posição de cada tipo, sem repetir: Goleiro, Fixo, Ala direito, Ala esquerdo e Pivô.");
 
             var equipesExistentes = await _competicaoRepository.ObterEquipesAsync(campeonatoId);
@@ -141,7 +147,9 @@ namespace Application.Services
                 .Select(aluno => new CandidatoAoSorteio(aluno.Id, aluno.Posicao!.Value))
                 .ToList();
 
-            var resultado = SorteioDeEquipes.Sortear(candidatos, dto?.Quantidade, Random.Shared);
+            var resultado = dto?.IncluirTodos == true
+                ? SorteioDeEquipes.SortearTodos(candidatos, dto.Quantidade, Random.Shared)
+                : SorteioDeEquipes.Sortear(candidatos, dto?.Quantidade, Random.Shared);
             if (resultado.Erro != null)
                 return RespostaDaCompeticao<List<EquipeDTO>>.Falha(resultado.Erro);
 
@@ -166,8 +174,9 @@ namespace Application.Services
             await _competicaoRepository.AdicionarEquipesAsync(novasEquipes, participacoesAtualizadas);
 
             var mensagem = $"{novasEquipes.Count} time(s) criado(s).";
-            if (resultado.Sobras.Count > 0)
-                mensagem += $" {resultado.Sobras.Count} aluno(s) ficaram sem time.";
+            var quantidadeDeReservas = participacoesAtualizadas.Count - novasEquipes.Count * JogadoresPorEquipe;
+            if (quantidadeDeReservas > 0)
+                mensagem += $" {quantidadeDeReservas} aluno(s) entraram como reserva.";
 
             return RespostaDaCompeticao<List<EquipeDTO>>.Ok(await MontarEquipesAsync(campeonatoId), mensagem);
         }
