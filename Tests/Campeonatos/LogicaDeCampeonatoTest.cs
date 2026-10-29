@@ -41,12 +41,27 @@ public class LogicaDeCampeonatoTest
     }
 
     [Fact]
-    public void Sorteio_Respeita_A_Quantidade_Pedida_E_Devolve_As_Sobras()
+    public void Sorteio_Respeita_A_Quantidade_Pedida_E_Poe_O_Restante_Como_Reserva()
     {
         var resultado = SorteioDeEquipes.Sortear(CriarCandidatos(4), 2, new Random(3));
 
         Assert.Equal(2, resultado.Equipes.Count);
-        Assert.Equal(10, resultado.Sobras.Count);
+        Assert.Empty(resultado.Sobras);
+        Assert.Equal(20, resultado.Equipes.Sum(equipe => equipe.Count));
+    }
+
+    [Fact]
+    public void Sorteio_Com_26_Alunos_Gera_5_Times_E_O_Aluno_Extra_Vira_Reserva()
+    {
+        var candidatos = CriarCandidatos(5);
+        candidatos.Add(new CandidatoAoSorteio(Guid.NewGuid(), PosicaoJogador.Fixo));
+
+        var resultado = SorteioDeEquipes.Sortear(candidatos, null, new Random(11));
+
+        Assert.Null(resultado.Erro);
+        Assert.Equal(5, resultado.Equipes.Count);
+        Assert.Equal(26, resultado.Equipes.Sum(equipe => equipe.Count));
+        Assert.Equal(1, resultado.Equipes.Count(equipe => equipe.Count == 6));
     }
 
     [Fact]
@@ -67,6 +82,65 @@ public class LogicaDeCampeonatoTest
 
         Assert.NotNull(resultado.Erro);
         Assert.Contains("Goleiro", resultado.Erro);
+    }
+
+    private static List<CandidatoAoSorteio> CriarCandidatosPorPosicao(params (PosicaoJogador Posicao, int Quantidade)[] grupos)
+    {
+        return grupos.SelectMany(grupo => Enumerable.Range(0, grupo.Quantidade).Select(_ => new CandidatoAoSorteio(Guid.NewGuid(), grupo.Posicao))).ToList();
+    }
+
+    [Fact]
+    public void Sorteio_Livre_Inclui_Todos_Mesmo_Sem_Goleiro()
+    {
+        var candidatos = CriarCandidatosPorPosicao(
+            (PosicaoJogador.Fixo, 4), (PosicaoJogador.AlaDireito, 3), (PosicaoJogador.AlaEsquerdo, 3), (PosicaoJogador.Pivo, 3));
+
+        var resultado = SorteioDeEquipes.SortearTodos(candidatos, null, new Random(7));
+
+        Assert.Null(resultado.Erro);
+        Assert.Equal(2, resultado.Equipes.Count);
+        Assert.Empty(resultado.Sobras);
+        var alunosDosTimes = resultado.Equipes.SelectMany(equipe => equipe).ToList();
+        Assert.Equal(13, alunosDosTimes.Count);
+        Assert.Equal(13, alunosDosTimes.Distinct().Count());
+        Assert.All(resultado.Equipes, equipe => Assert.True(equipe.Count >= 5));
+    }
+
+    [Fact]
+    public void Sorteio_Livre_Com_25_Alunos_Gera_5_Times_De_5()
+    {
+        var resultado = SorteioDeEquipes.SortearTodos(CriarCandidatos(5), null, new Random(8));
+
+        Assert.Equal(5, resultado.Equipes.Count);
+        Assert.All(resultado.Equipes, equipe => Assert.Equal(5, equipe.Count));
+    }
+
+    [Fact]
+    public void Sorteio_Livre_Distribui_Os_Excedentes_Como_Reservas()
+    {
+        var resultado = SorteioDeEquipes.SortearTodos(CriarCandidatos(5).Take(23).ToList(), null, new Random(9));
+
+        Assert.Equal(4, resultado.Equipes.Count);
+        Assert.Equal(23, resultado.Equipes.Sum(equipe => equipe.Count));
+        Assert.All(resultado.Equipes, equipe => Assert.True(equipe.Count >= 5));
+    }
+
+    [Fact]
+    public void Sorteio_Livre_Recusa_Menos_De_Cinco_Alunos_E_Quantidade_Impossivel()
+    {
+        Assert.NotNull(SorteioDeEquipes.SortearTodos(CriarCandidatos(5).Take(4).ToList(), null, new Random(1)).Erro);
+        Assert.NotNull(SorteioDeEquipes.SortearTodos(CriarCandidatos(5), 6, new Random(1)).Erro);
+    }
+
+    [Fact]
+    public void Sorteio_Livre_Mantem_Uma_Posicao_De_Cada_Quando_Ha_Alunos_Suficientes()
+    {
+        var candidatos = CriarCandidatos(3);
+
+        var resultado = SorteioDeEquipes.SortearTodos(candidatos, null, new Random(10));
+
+        Assert.All(resultado.Equipes, equipe =>
+            Assert.Equal(5, equipe.Select(alunoId => candidatos.First(candidato => candidato.AlunoId == alunoId).Posicao).Distinct().Count()));
     }
 
     [Theory]

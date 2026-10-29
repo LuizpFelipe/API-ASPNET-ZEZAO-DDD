@@ -139,11 +139,66 @@ public class CampeonatoCompeticaoServiceTest
     }
 
     [Fact]
+    public async Task Sorteio_Com_Sobra_De_Alunos_Poe_O_Excedente_Como_Reserva()
+    {
+        InscreverAlunosDeCadaPosicao(5);
+        CriarEInscrever(_sub11, PosicaoJogador.Fixo);
+
+        var resultado = await _servico.SortearEquipesAsync(_campeonato.Id, new SortearEquipesRequestDTO());
+
+        Assert.True(resultado.Status);
+        Assert.Equal(5, resultado.Data!.Count);
+        Assert.Contains("reserva", resultado.Message);
+        Assert.All(_competicaoRepositorio.Participacoes, participacao => Assert.NotNull(participacao.EquipeId));
+    }
+
+    [Fact]
     public async Task Sorteio_Falha_Sem_Alunos_Suficientes()
     {
         CriarEInscrever(_sub11, PosicaoJogador.Goleiro);
 
         Assert.False((await _servico.SortearEquipesAsync(_campeonato.Id, new SortearEquipesRequestDTO())).Status);
+    }
+
+    [Fact]
+    public async Task Sorteio_Livre_Inclui_Todos_Mesmo_Com_Posicao_Faltando()
+    {
+        foreach (var posicao in new[] { PosicaoJogador.Fixo, PosicaoJogador.AlaDireito, PosicaoJogador.Pivo })
+            for (var indice = 0; indice < 4; indice++)
+                CriarEInscrever(_sub11, posicao);
+
+        var estrito = await _servico.SortearEquipesAsync(_campeonato.Id, new SortearEquipesRequestDTO());
+        var livre = await _servico.SortearEquipesAsync(_campeonato.Id, new SortearEquipesRequestDTO { IncluirTodos = true });
+
+        Assert.False(estrito.Status);
+        Assert.True(livre.Status);
+        Assert.Equal(2, livre.Data!.Count);
+        Assert.All(_competicaoRepositorio.Participacoes, participacao => Assert.NotNull(participacao.EquipeId));
+    }
+
+    [Fact]
+    public async Task Time_Manual_Em_Modo_Livre_Aceita_Posicoes_Repetidas()
+    {
+        for (var indice = 0; indice < 6; indice++)
+            CriarEInscrever(_sub11, PosicaoJogador.Fixo);
+        var alunoIds = _alunoRepositorio.Alunos.Select(aluno => aluno.Id).ToList();
+
+        var estrito = await _servico.CriarEquipeAsync(_campeonato.Id, new CriarEquipeRequestDTO { AlunoIds = alunoIds });
+        var livre = await _servico.CriarEquipeAsync(_campeonato.Id, new CriarEquipeRequestDTO { AlunoIds = alunoIds, ModoLivre = true });
+
+        Assert.False(estrito.Status);
+        Assert.True(livre.Status);
+        Assert.Equal(6, livre.Data!.Jogadores.Count);
+    }
+
+    [Fact]
+    public async Task Time_Em_Modo_Livre_Recusa_Menos_De_Cinco_Alunos()
+    {
+        for (var indice = 0; indice < 4; indice++)
+            CriarEInscrever(_sub11, PosicaoJogador.Fixo);
+        var alunoIds = _alunoRepositorio.Alunos.Select(aluno => aluno.Id).ToList();
+
+        Assert.False((await _servico.CriarEquipeAsync(_campeonato.Id, new CriarEquipeRequestDTO { AlunoIds = alunoIds, ModoLivre = true })).Status);
     }
 
     [Fact]

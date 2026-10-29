@@ -8,6 +8,67 @@ namespace Application.Campeonatos
 
     public static class SorteioDeEquipes
     {
+        private const int JogadoresMinimosPorEquipe = 5;
+
+        // Modo livre: todos os candidatos entram em algum time. Cada time tenta ter uma posição de cada;
+        // posições que faltam são preenchidas por jogadores de outras posições e o excedente vira reserva.
+        public static ResultadoDoSorteio SortearTodos(IEnumerable<CandidatoAoSorteio> candidatos, int? quantidadeDesejada, Random aleatorio)
+        {
+            var lista = candidatos.ToList();
+            var maximoDeEquipes = lista.Count / JogadoresMinimosPorEquipe;
+            if (maximoDeEquipes < 1)
+            {
+                return new ResultadoDoSorteio(new(), new(), 0, $"São necessários ao menos {JogadoresMinimosPorEquipe} alunos sem time para formar um time.");
+            }
+
+            var quantidade = quantidadeDesejada ?? maximoDeEquipes;
+            if (quantidade < 1 || quantidade > maximoDeEquipes)
+            {
+                return new ResultadoDoSorteio(new(), new(), maximoDeEquipes,
+                    $"Com {lista.Count} alunos é possível formar de 1 a {maximoDeEquipes} time(s) de pelo menos {JogadoresMinimosPorEquipe} jogadores.");
+            }
+
+            var posicaoDe = lista.ToDictionary(candidato => candidato.AlunoId, candidato => candidato.Posicao);
+            var porPosicao = NomesDePosicao.TodasAsPosicoes.ToDictionary(
+                posicao => posicao,
+                posicao => Embaralhar(lista.Where(candidato => candidato.Posicao == posicao).Select(candidato => candidato.AlunoId).ToList(), aleatorio));
+
+            var equipes = Enumerable.Range(0, quantidade).Select(_ => new List<Guid>()).ToList();
+            var restantes = new List<Guid>();
+
+            foreach (var posicao in NomesDePosicao.TodasAsPosicoes)
+            {
+                var jogadores = porPosicao[posicao];
+                for (var indice = 0; indice < jogadores.Count; indice++)
+                {
+                    if (indice < quantidade) equipes[indice].Add(jogadores[indice]);
+                    else restantes.Add(jogadores[indice]);
+                }
+            }
+
+            restantes = Embaralhar(restantes, aleatorio);
+
+            foreach (var equipe in equipes.OrderBy(equipe => equipe.Count))
+            {
+                while (equipe.Count < JogadoresMinimosPorEquipe && restantes.Count > 0)
+                {
+                    var posicoesDoTime = equipe.Select(alunoId => posicaoDe[alunoId]).ToHashSet();
+                    var escolhido = restantes.FirstOrDefault(alunoId => !posicoesDoTime.Contains(posicaoDe[alunoId]));
+                    if (escolhido == Guid.Empty) escolhido = restantes[0];
+                    equipe.Add(escolhido);
+                    restantes.Remove(escolhido);
+                }
+            }
+
+            for (var indice = 0; restantes.Count > 0; indice++)
+            {
+                equipes[indice % quantidade].Add(restantes[0]);
+                restantes.RemoveAt(0);
+            }
+
+            return new ResultadoDoSorteio(equipes, new(), maximoDeEquipes, null);
+        }
+
         public static ResultadoDoSorteio Sortear(IEnumerable<CandidatoAoSorteio> candidatos, int? quantidadeDesejada, Random aleatorio)
         {
             var candidatosPorPosicao = NomesDePosicao.TodasAsPosicoes.ToDictionary(
@@ -41,8 +102,14 @@ namespace Application.Campeonatos
                 equipes.Add(NomesDePosicao.TodasAsPosicoes.Select(posicao => embaralhados[posicao][indice]).ToList());
             }
 
-            var sobras = embaralhados.Values.SelectMany(lista => lista.Skip(quantidade)).ToList();
-            return new ResultadoDoSorteio(equipes, sobras, maximoDeEquipes, null);
+            // Quem não coube em um time completo entra como reserva em algum time, ninguém fica de fora.
+            var reservas = Embaralhar(embaralhados.Values.SelectMany(lista => lista.Skip(quantidade)).ToList(), aleatorio);
+            for (var indice = 0; indice < reservas.Count; indice++)
+            {
+                equipes[indice % quantidade].Add(reservas[indice]);
+            }
+
+            return new ResultadoDoSorteio(equipes, new(), maximoDeEquipes, null);
         }
 
         private static List<string> ListarPosicoesComMenosDe(Dictionary<PosicaoJogador, List<Guid>> candidatosPorPosicao, int minimo)
