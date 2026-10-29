@@ -4,11 +4,13 @@ namespace Application.Request
     {
         public string? Nome { get; set; }
         public List<Guid> AlunoIds { get; set; } = new();
+        public bool ModoLivre { get; set; }
     }
 
     public class SortearEquipesRequestDTO
     {
         public int? Quantidade { get; set; }
+        public bool IncluirTodos { get; set; }
     }
 
     public class EstatisticaDoJogadorRequestDTO
