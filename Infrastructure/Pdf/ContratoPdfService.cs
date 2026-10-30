@@ -90,9 +90,14 @@ public class ContratoPdfService : IContratoPdfService
                         $"O CONTRATANTE pagará {contrato.NumParcelas} parcelas mensais de {valorDaParcela}, " +
                         $"totalizando {valorTotal}, com vencimento todo dia {configuracoes.DiaVencimento} de cada mês.");
 
-                    MontarClausula(coluna, 4, "DO CANCELAMENTO", "A definir pela escola.");
+                    MontarClausula(coluna, 4, "DO CANCELAMENTO",
+                        "O CONTRATANTE poderá cancelar o contrato a qualquer momento, mediante aviso por escrito à CONTRATADA com antecedência mínima de 30 dias. " +
+                        "As parcelas vencidas até a data do cancelamento permanecem devidas, e não haverá devolução de parcelas já pagas. " +
+                        "O atraso no pagamento por mais de 60 dias autoriza a CONTRATADA a suspender a participação do aluno nas aulas até a regularização.");
 
-                    MontarClausula(coluna, 5, "DO FORO", "A definir pela escola.");
+                    MontarClausula(coluna, 5, "DO FORO",
+                        "Fica eleito o foro da comarca de Maringá, Estado do Paraná, para dirimir quaisquer dúvidas decorrentes deste contrato, " +
+                        "com renúncia a qualquer outro, por mais privilegiado que seja.");
 
                     coluna.Item().PaddingTop(10).AlignRight().Text($"Emitido em {dataDeEmissao}.").FontColor(CorSecundaria);
 

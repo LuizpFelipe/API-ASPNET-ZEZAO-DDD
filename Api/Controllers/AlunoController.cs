@@ -17,11 +17,25 @@ public class AlunosController : ControllerBase
 
     private readonly IAlunoService _alunoService;
     private readonly IArmazenamentoArquivoService _armazenamentoService;
+    private readonly IPromocaoDeCategoriaService _promocaoDeCategoriaService;
 
-    public AlunosController(IAlunoService alunoService, IArmazenamentoArquivoService armazenamentoService)
+    public AlunosController(
+        IAlunoService alunoService,
+        IArmazenamentoArquivoService armazenamentoService,
+        IPromocaoDeCategoriaService promocaoDeCategoriaService)
     {
         _alunoService = alunoService;
         _armazenamentoService = armazenamentoService;
+        _promocaoDeCategoriaService = promocaoDeCategoriaService;
+    }
+
+    /// <summary>Executa na hora a promoção de categoria por aniversário (a rotina diária faz o mesmo sozinha).</summary>
+    [Authorize(Roles = "Coordenador")]
+    [HttpPost("promover-categorias")]
+    public async Task<IActionResult> PromoverCategorias()
+    {
+        var resultado = await _promocaoDeCategoriaService.ExecutarAsync();
+        return Ok(new { Status = true, Message = "Promoção de categoria executada.", Data = resultado });
     }
 
 

@@ -62,6 +62,12 @@ public class Aluno
         Status = StatusAluno.Inativo;
     }
 
+    public void PromoverParaCategoria(Guid categoriaId, Guid turmaId)
+    {
+        CategoriaId = categoriaId;
+        TurmaId = turmaId;
+    }
+
     public bool MarcarComoInadimplente()
     {
         if (Status != StatusAluno.Ativo) return false;
