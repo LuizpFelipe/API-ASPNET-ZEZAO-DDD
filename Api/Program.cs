@@ -1,3 +1,4 @@
+using Api.Servicos;
 using Application.Configuration;
 using Application.Interfaces;
 using Application.Services;
@@ -73,6 +74,10 @@ builder.Services.AddScoped<IPresencaRepository, PresencaRepository>();
 builder.Services.AddScoped<IPresencaService, PresencaService>();
 
 builder.Services.AddScoped<IFinanceiroService, FinanceiroService>();
+builder.Services.AddSingleton(builder.Configuration.GetSection("CobrancaAutomatica").Get<ConfiguracoesCobrancaAutomatica>()
+    ?? new ConfiguracoesCobrancaAutomatica());
+builder.Services.AddScoped<IRotinaFinanceiraService, RotinaFinanceiraService>();
+builder.Services.AddHostedService<RotinaFinanceiraEmSegundoPlano>();
 builder.Services.AddScoped<IAvisoCobrancaRepository, AvisoCobrancaRepository>();
 builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
 
