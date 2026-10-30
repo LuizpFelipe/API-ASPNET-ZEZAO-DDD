@@ -20,6 +20,13 @@ public class ContratoPdfService : IContratoPdfService
 
     private static readonly byte[]? LogoDaEscola = CarregarLogo();
 
+    private readonly IRelogio _relogio;
+
+    public ContratoPdfService(IRelogio relogio)
+    {
+        _relogio = relogio;
+    }
+
     private static byte[]? CarregarLogo()
     {
         var caminhoDaLogo = Path.Combine(AppContext.BaseDirectory, "Pdf", "Recursos", "logo-completa.png");
@@ -33,7 +40,7 @@ public class ContratoPdfService : IContratoPdfService
         var valorDaParcela = contrato.ValorParcela.ToString("C", PtBr);
         var valorTotal = (contrato.ValorParcela * contrato.NumParcelas).ToString("C", PtBr);
         var numeroDoContrato = contrato.Id.ToString("N")[..8].ToUpperInvariant();
-        var dataDeEmissao = DateTime.Now.ToString("dd 'de' MMMM 'de' yyyy", PtBr);
+        var dataDeEmissao = _relogio.AgoraNoBrasil().ToString("dd 'de' MMMM 'de' yyyy", PtBr);
 
         return Document.Create(documento =>
         {
@@ -64,7 +71,7 @@ public class ContratoPdfService : IContratoPdfService
 
                         linha.RelativeItem().Element(caixa => MontarParte(caixa, "CONTRATANTE", new[]
                         {
-                            aluno.ResponsavelNome,
+                            $"{aluno.ResponsavelNome} (responsável pelo aluno)",
                             $"CPF: {CpfValidador.Formatar(aluno.ResponsavelCpf)}",
                             $"Telefone: {aluno.Telefone}",
                             $"Endereço: {aluno.Endereco}"
@@ -81,7 +88,7 @@ public class ContratoPdfService : IContratoPdfService
                     });
 
                     MontarClausula(coluna, 1, "DO OBJETO",
-                        $"A CONTRATADA prestará ao aluno {aluno.NomeCompleto} aulas de futsal na categoria {nomeCategoria}, turma {nomeTurma}.");
+                        $"A CONTRATADA prestará ao aluno {aluno.NomeCompleto} aulas de futsal na categoria {nomeCategoria}, na turma \"{nomeTurma}\".");
 
                     MontarClausula(coluna, 2, "DA VIGÊNCIA",
                         $"O presente contrato vigora de {contrato.DataInicio:dd/MM/yyyy} até {contrato.DataFim:dd/MM/yyyy}.");
@@ -92,10 +99,19 @@ public class ContratoPdfService : IContratoPdfService
 
                     MontarClausula(coluna, 4, "DO CANCELAMENTO",
                         "O CONTRATANTE poderá cancelar o contrato a qualquer momento, mediante aviso por escrito à CONTRATADA com antecedência mínima de 30 dias. " +
-                        "As parcelas vencidas até a data do cancelamento permanecem devidas, e não haverá devolução de parcelas já pagas. " +
+                        "As parcelas vencidas até a data do cancelamento, inclusive as que vencerem durante o aviso prévio, permanecem devidas, e não haverá devolução de parcelas já pagas. " +
                         "O atraso no pagamento por mais de 60 dias autoriza a CONTRATADA a suspender a participação do aluno nas aulas até a regularização.");
 
-                    MontarClausula(coluna, 5, "DO FORO",
+                    MontarClausula(coluna, 5, "DAS AULAS E DA REPOSIÇÃO",
+                        "Caso o aluno não possa comparecer a uma aula, o CONTRATANTE deverá avisar a CONTRATADA com antecedência mínima de 24 horas. " +
+                        "A reposição é concedida em turma da mesma categoria do aluno e deve ser realizada dentro do mesmo mês da aula perdida.");
+
+                    MontarClausula(coluna, 6, "DAS COMUNICAÇÕES",
+                        "O CONTRATANTE autoriza a CONTRATADA a enviar avisos de cobrança por WhatsApp e e-mail, a primeira vez 10 dias antes do vencimento " +
+                        "e novamente 10 dias após o vencimento, caso a parcela permaneça em aberto. Os dados pessoais do CONTRATANTE e do aluno serão usados " +
+                        "apenas para a prestação dos serviços e para a cobrança, nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018).");
+
+                    MontarClausula(coluna, 7, "DO FORO",
                         "Fica eleito o foro da comarca de Maringá, Estado do Paraná, para dirimir quaisquer dúvidas decorrentes deste contrato, " +
                         "com renúncia a qualquer outro, por mais privilegiado que seja.");
 
