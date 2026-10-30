@@ -77,7 +77,8 @@ builder.Services.AddScoped<IFinanceiroService, FinanceiroService>();
 builder.Services.AddSingleton(builder.Configuration.GetSection("CobrancaAutomatica").Get<ConfiguracoesCobrancaAutomatica>()
     ?? new ConfiguracoesCobrancaAutomatica());
 builder.Services.AddScoped<IRotinaFinanceiraService, RotinaFinanceiraService>();
-builder.Services.AddHostedService<RotinaFinanceiraEmSegundoPlano>();
+builder.Services.AddScoped<IPromocaoDeCategoriaService, PromocaoDeCategoriaService>();
+builder.Services.AddHostedService<RotinasDiariasEmSegundoPlano>();
 builder.Services.AddScoped<IAvisoCobrancaRepository, AvisoCobrancaRepository>();
 builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
 
