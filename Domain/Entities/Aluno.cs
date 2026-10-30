@@ -61,4 +61,18 @@ public class Aluno
     {
         Status = StatusAluno.Inativo;
     }
+
+    public bool MarcarComoInadimplente()
+    {
+        if (Status != StatusAluno.Ativo) return false;
+        Status = StatusAluno.Inadimplente;
+        return true;
+    }
+
+    public bool RegularizarSituacao()
+    {
+        if (Status != StatusAluno.Inadimplente) return false;
+        Status = StatusAluno.Ativo;
+        return true;
+    }
 }

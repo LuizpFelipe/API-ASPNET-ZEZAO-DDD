@@ -12,10 +12,12 @@ namespace Api.Controllers
     public class FinanceiroController : ControllerBase
     {
         private readonly IFinanceiroService _financeiroService;
+        private readonly IRotinaFinanceiraService _rotinaFinanceiraService;
 
-        public FinanceiroController(IFinanceiroService financeiroService)
+        public FinanceiroController(IFinanceiroService financeiroService, IRotinaFinanceiraService rotinaFinanceiraService)
         {
             _financeiroService = financeiroService;
+            _rotinaFinanceiraService = rotinaFinanceiraService;
         }
 
         [HttpGet("resumo")]
@@ -37,6 +39,9 @@ namespace Api.Controllers
         {
             var result = await _financeiroService.RegistrarPagamentoAsync(id);
             if (!result.Status) return BadRequest(result);
+
+            // O aluno que quitou a última parcela vencida volta a Ativo na hora, sem esperar a rotina.
+            await _rotinaFinanceiraService.SincronizarStatusDosAlunosAsync();
             return Ok(result);
         }
 
@@ -46,6 +51,13 @@ namespace Api.Controllers
             var result = await _financeiroService.DispararCobrancaAsync(id);
             if (!result.Status) return BadRequest(result);
             return Ok(result);
+        }
+
+        [HttpPost("rotina")]
+        public async Task<IActionResult> ExecutarRotina()
+        {
+            var resultado = await _rotinaFinanceiraService.ExecutarAsync();
+            return Ok(new { Status = true, Message = "Rotina financeira executada.", Data = resultado });
         }
     }
 }
