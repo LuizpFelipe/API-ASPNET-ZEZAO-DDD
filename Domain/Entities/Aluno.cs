@@ -62,6 +62,11 @@ public class Aluno
         Status = StatusAluno.Inativo;
     }
 
+    public void Reativar()
+    {
+        if (Status == StatusAluno.Inativo) Status = StatusAluno.Ativo;
+    }
+
     public void PromoverParaCategoria(Guid categoriaId, Guid turmaId)
     {
         CategoriaId = categoriaId;

@@ -38,6 +38,9 @@ public class AlunoRepositorioEmMemoria : IAlunoRepository
     }
     public Task<bool> ExisteComMesmoNomeEDataNascimentoAsync(string nome, DateOnly dataNascimento, Guid? ignorarId = null) =>
         Task.FromResult(Alunos.Any(aluno => aluno.NomeCompleto == nome && aluno.DataNascimento == dataNascimento && aluno.Id != ignorarId));
+    public Task<Aluno?> ObterInativoPorNomeEDataNascimentoAsync(string nome, DateOnly dataNascimento, Guid? ignorarId = null) =>
+        Task.FromResult(Alunos.FirstOrDefault(aluno => aluno.NomeCompleto == nome && aluno.DataNascimento == dataNascimento
+                                                       && aluno.Status == Domain.Enums.StatusAluno.Inativo && aluno.Id != ignorarId));
     public Task AdicionarAsync(Aluno aluno) { Alunos.Add(aluno); return Task.CompletedTask; }
     public Task AtualizarAsync(Aluno aluno) => Task.CompletedTask;
 }

@@ -109,6 +109,19 @@ public class ContratoService : IContratoService
         return new ContratoResponseDTO { Status = true, Message = "Contrato cancelado com sucesso.", Data = Mapear(contrato) };
     }
 
+    public async Task<int> CancelarContratosAtivosDoAlunoAsync(Guid alunoId)
+    {
+        var contratosAtivos = (await _contratoRepository.ObterAtivosDoAlunoAsync(alunoId)).ToList();
+
+        foreach (var contrato in contratosAtivos)
+        {
+            contrato.Cancelar();
+            await _contratoRepository.AtualizarAsync(contrato);
+        }
+
+        return contratosAtivos.Count;
+    }
+
     public async Task<ContratoResponseDTO> GerarPdfAsync(Guid id)
     {
         var contrato = await _contratoRepository.ObterPorIdAsync(id);
