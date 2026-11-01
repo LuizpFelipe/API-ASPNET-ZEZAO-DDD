@@ -16,17 +16,24 @@ public class AlunoService : IAlunoService
     private readonly ITurmaRepository _turmaRepository;
     private readonly IContratoService _contratoService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IRelogio? _relogio;
 
     public AlunoService(IAlunoRepository alunoRepository, ICategoriaRepository categoriaRepository,
                         ITurmaRepository turmaRepository,
-                        IContratoService contratoService, IUnitOfWork unitOfWork)
+                        IContratoService contratoService, IUnitOfWork unitOfWork,
+                        IRelogio? relogio = null)
     {
         _alunoRepository = alunoRepository;
         _categoriaRepository = categoriaRepository;
         _turmaRepository = turmaRepository;
         _contratoService = contratoService;
         _unitOfWork = unitOfWork;
+        _relogio = relogio;
     }
+
+    // Sem relógio injetado (testes), usa o horário de Brasília calculado direto do UTC.
+    private DateOnly HojeNoBrasil() =>
+        _relogio?.HojeNoBrasil() ?? DateOnly.FromDateTime(DateTime.UtcNow.AddHours(-3));
 
     public async Task<AlunoResponseDTO> CriarAsync(CriarAlunoRequestDTO dto)
     {
@@ -185,7 +192,7 @@ public class AlunoService : IAlunoService
         if (string.IsNullOrWhiteSpace(endereco)) return "Informe o endereço do aluno.";
         if (!Enum.IsDefined(nivelTecnico)) return "Nível técnico inválido.";
         if (dataNascimento == default) return "Informe a data de nascimento.";
-        if (dataNascimento > DateOnly.FromDateTime(DateTime.Now)) return "A data de nascimento não pode estar no futuro.";
+        if (dataNascimento > HojeNoBrasil()) return "A data de nascimento não pode estar no futuro.";
 
         return null;
     }
@@ -201,7 +208,7 @@ public class AlunoService : IAlunoService
     }
     private int CalcularIdade(DateOnly dataNascimento)
     {
-        var hoje = DateOnly.FromDateTime(DateTime.Now);
+        var hoje = HojeNoBrasil();
         int idade = hoje.Year - dataNascimento.Year;
         if (dataNascimento > hoje.AddYears(-idade)) idade--;
         return idade;
