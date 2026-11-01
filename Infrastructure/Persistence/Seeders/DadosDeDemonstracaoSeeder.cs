@@ -78,11 +78,14 @@ namespace Infrastructure.Persistence.Seeders
             AppDbContext contexto,
             ISecurityService servicoDeSeguranca,
             DateOnly hoje,
-            string senhaDosProfessores)
+            string senhaDosProfessores,
+            DateOnly? dataDaApresentacao = null)
         {
             if (await contexto.Usuarios.AnyAsync(usuario => usuario.NomeUsuario == NomeDeUsuarioDeControle))
             {
-                return await CompletarAsync(contexto, hoje);
+                // Com data de apresentação, os dados ficam completos até esse dia (inclusive), mesmo que ainda seja futuro.
+                var dataDeReferencia = dataDaApresentacao.HasValue ? dataDaApresentacao.Value.AddDays(1) : hoje;
+                return await CompletarAsync(contexto, hoje, dataDeReferencia, dataDaApresentacao.HasValue);
             }
 
             var categorias = await GarantirCategoriasAsync(contexto);
@@ -583,7 +586,7 @@ namespace Infrastructure.Persistence.Seeders
         }
 
         // Completa um banco já populado por uma versão anterior do seeder: posições, mais alunos e campeonatos com times e jogos.
-        private static async Task<string> CompletarAsync(AppDbContext contexto, DateOnly hoje)
+        private static async Task<string> CompletarAsync(AppDbContext contexto, DateOnly hoje, DateOnly dataDeReferencia, bool completarAteDataDaApresentacao)
         {
             var categorias = (await contexto.Set<Categoria>().ToListAsync()).OrderBy(categoria => categoria.IdadeMin).ToList();
             var alunosExistentes = await contexto.Set<Aluno>().ToListAsync();
@@ -635,13 +638,17 @@ namespace Infrastructure.Persistence.Seeders
                 await contexto.SaveChangesAsync();
             }
 
-            if (posicoesDefinidas == 0 && novosAlunos.Count == 0 && quantidadeDeCampeonatos == 0)
+            var atualizacao = await AtualizacaoDeDadosDeDemonstracao.AtualizarAteAsync(contexto, dataDeReferencia, deixarUltimaAulaSemChamada: !completarAteDataDaApresentacao);
+
+            if (posicoesDefinidas == 0 && novosAlunos.Count == 0 && quantidadeDeCampeonatos == 0 && !atualizacao.HouveMudancas)
             {
-                return "Dados de demonstração já existem. Nada foi criado.";
+                return "Dados de demonstração já existem e estão atualizados. Nada foi criado.";
             }
 
             return $"Dados de demonstração completados: {posicoesDefinidas} posições definidas, {novosAlunos.Count} alunos novos, " +
-                   $"{quantidadeDeCampeonatos} campeonatos recriados com times e jogos.";
+                   $"{quantidadeDeCampeonatos} campeonatos recriados com times e jogos. " +
+                   $"Atualização até {dataDeReferencia.AddDays(completarAteDataDaApresentacao ? -1 : 0):dd/MM/yyyy}: {atualizacao.PresencasCriadas} presenças criadas, " +
+                   $"{atualizacao.ParcelasPagas} parcelas pagas, {atualizacao.AlunosRegularizados} alunos regularizados.";
         }
 
         private static string GerarCpfValido(int semente)
