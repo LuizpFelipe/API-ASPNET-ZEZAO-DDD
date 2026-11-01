@@ -7,7 +7,7 @@ namespace Application.Request
     public class CriarTurmaRequestDTO
     {
         public string Nome { get; set; } = string.Empty;
-        public string DiasSemana { get; set; } = string.Empty;
+        public string? DiasSemana { get; set; }
         public string Horario { get; set; } = string.Empty;
         public Guid CategoriaId { get; set; }
         public Guid ProfessorId { get; set; }
