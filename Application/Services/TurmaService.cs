@@ -119,7 +119,7 @@ namespace Application.Services
             return new TurmaResponseDTO { Status = true, Message = "Removida com sucesso" };
         }
 
-        public async Task<TurmaResponseDTO> InativarAsync(Guid id)
+        public async Task<TurmaResponseDTO> InativarAsync(Guid id, Guid? turmaDestinoId = null)
         {
             var turma = await _turmaRepository.ObterPorIdAsync(id);
             if (turma == null) return new TurmaResponseDTO { Status = false, Message = "Turma não encontrada" };
@@ -128,15 +128,29 @@ namespace Application.Services
                 return new TurmaResponseDTO { Status = false, Message = "A turma já está inativa." };
 
             var alunosAtivos = await _turmaRepository.ContarAlunosNaoInativosAsync(id);
+            Guid? destinoParaTransferir = null;
             if (alunosAtivos > 0)
-                return new TurmaResponseDTO
-                {
-                    Status = false,
-                    Message = $"Não é possível inativar a turma: ela ainda tem {alunosAtivos} aluno(s) ativo(s). Transfira-os para outra turma antes."
-                };
+            {
+                if (!turmaDestinoId.HasValue)
+                    return new TurmaResponseDTO
+                    {
+                        Status = false,
+                        Message = $"A turma ainda tem {alunosAtivos} aluno(s) ativo(s). Escolha a turma que vai recebê-los."
+                    };
+
+                var turmaDestino = await _turmaRepository.ObterPorIdAsync(turmaDestinoId.Value);
+                if (turmaDestino == null || turmaDestino.Id == id)
+                    return new TurmaResponseDTO { Status = false, Message = "Turma de destino inválida." };
+                if (!turmaDestino.Ativa)
+                    return new TurmaResponseDTO { Status = false, Message = "A turma de destino está inativa." };
+                if (turmaDestino.CategoriaId != turma.CategoriaId)
+                    return new TurmaResponseDTO { Status = false, Message = "A turma de destino precisa ser da mesma categoria." };
+
+                destinoParaTransferir = turmaDestino.Id;
+            }
 
             turma.Inativar();
-            await _turmaRepository.AtualizarAsync(turma);
+            await _turmaRepository.SalvarInativacaoAsync(turma, destinoParaTransferir);
             return new TurmaResponseDTO { Status = true, Message = "Turma inativada com sucesso", Data = turma };
         }
 

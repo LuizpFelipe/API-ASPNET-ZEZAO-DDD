@@ -62,6 +62,23 @@ namespace Infrastructure.Repositories
             return await _context.Set<Aluno>().CountAsync(a => a.TurmaId == turmaId && a.Status != StatusAluno.Inativo);
         }
 
+        /// <summary>Move os alunos não inativos para a turma de destino (se informada) e salva tudo junto com a turma já inativada.</summary>
+        public async Task SalvarInativacaoAsync(Turma turmaInativada, Guid? turmaDestinoId)
+        {
+            if (turmaDestinoId.HasValue)
+            {
+                var destino = await _context.Turmas.FindAsync(turmaDestinoId.Value);
+                var alunos = await _context.Set<Aluno>()
+                    .Where(a => a.TurmaId == turmaInativada.Id && a.Status != StatusAluno.Inativo)
+                    .ToListAsync();
+                foreach (var aluno in alunos)
+                    aluno.PromoverParaCategoria(destino!.CategoriaId, destino.Id);
+            }
+
+            _context.Turmas.Update(turmaInativada);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<bool> PossuiVinculosAsync(Guid turmaId)
         {
             return await _context.Set<Aluno>().AnyAsync(a => a.TurmaId == turmaId)
