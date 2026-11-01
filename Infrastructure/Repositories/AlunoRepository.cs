@@ -49,6 +49,16 @@ public class AlunoRepository : IAlunoRepository
             .FirstOrDefaultAsync(a => a.Id == id);
     }
 
+    public async Task<Aluno?> ObterInativoPorNomeEDataNascimentoAsync(string nome, DateOnly dataNascimento, Guid? ignorarId = null)
+    {
+        var query = _context.Set<Aluno>().Where(a => a.NomeCompleto == nome && a.DataNascimento == dataNascimento && a.Status == StatusAluno.Inativo);
+        if (ignorarId.HasValue)
+        {
+            query = query.Where(a => a.Id != ignorarId.Value);
+        }
+        return await query.FirstOrDefaultAsync();
+    }
+
     public async Task<bool> ExisteComMesmoNomeEDataNascimentoAsync(string nome, DateOnly dataNascimento, Guid? ignorarId = null)
     {
         var query = _context.Set<Aluno>().Where(a => a.NomeCompleto == nome && a.DataNascimento == dataNascimento && a.Status != StatusAluno.Inativo);

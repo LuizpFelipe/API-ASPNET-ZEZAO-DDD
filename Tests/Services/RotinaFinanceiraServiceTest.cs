@@ -419,6 +419,7 @@ public class RotinaFinanceiraServiceTest
         public Task<Dictionary<Guid, string>> ObterNomesPorIdsAsync(IEnumerable<Guid> alunoIds) => throw new NotImplementedException();
         public Task<List<Aluno>> ObterPorIdsAsync(IEnumerable<Guid> alunoIds) => throw new NotImplementedException();
         public Task<bool> ExisteComMesmoNomeEDataNascimentoAsync(string nome, DateOnly dataNascimento, Guid? ignorarId = null) => throw new NotImplementedException();
+        public Task<Aluno?> ObterInativoPorNomeEDataNascimentoAsync(string nome, DateOnly dataNascimento, Guid? ignorarId = null) => throw new NotImplementedException();
         public Task AdicionarAsync(Aluno aluno) => throw new NotImplementedException();
         public Task AtualizarAsync(Aluno aluno) => Task.CompletedTask;
     }

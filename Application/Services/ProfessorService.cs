@@ -63,6 +63,9 @@ namespace Application.Services
             if (string.IsNullOrWhiteSpace(dto.Nome))
                 return Falha("O nome é obrigatório.");
 
+            if (dto.Nome.Trim().Length > 150)
+                return Falha("O nome deve ter no máximo 150 caracteres.");
+
             if (string.IsNullOrWhiteSpace(dto.NomeUsuario))
                 return Falha("O nome de usuário é obrigatório.");
 
@@ -107,6 +110,9 @@ namespace Application.Services
 
             if (string.IsNullOrWhiteSpace(dto.Nome))
                 return Falha("O nome é obrigatório.");
+
+            if (dto.Nome.Trim().Length > 150)
+                return Falha("O nome deve ter no máximo 150 caracteres.");
 
             if (string.IsNullOrWhiteSpace(dto.Telefone))
                 return Falha("O telefone é obrigatório.");

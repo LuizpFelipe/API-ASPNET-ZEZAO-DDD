@@ -103,6 +103,7 @@ namespace Application.Services
         private static string? ValidarDadosDoCampeonato(string? nome, DateOnly data)
         {
             if (string.IsNullOrWhiteSpace(nome)) return "Informe o nome do campeonato.";
+            if (nome.Trim().Length > 100) return "O nome do campeonato deve ter no máximo 100 caracteres.";
             if (data == default) return "Informe a data do campeonato.";
 
             return null;

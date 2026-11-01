@@ -85,7 +85,10 @@ public class AlunoService : IAlunoService
             return new AlunoResponseDTO { Status = false, Message = $"A turma selecionada não é da categoria do aluno ({categoria.Nome})." };
         }
 
-        var aluno = new Aluno(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico,
+        // O banco só aceita um cadastro por nome e data de nascimento. Se o aluno foi inativado antes,
+        // o cadastro antigo é reativado com os dados novos, em vez de tentar criar outro e falhar.
+        var alunoInativo = await _alunoRepository.ObterInativoPorNomeEDataNascimentoAsync(dto.NomeCompleto, dto.DataNascimento);
+        var aluno = alunoInativo ?? new Aluno(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico,
                               dto.FotoUrl, dto.ResponsavelNome, cpfDoResponsavel, dto.Telefone,
                               dto.Endereco, dto.TurmaId, categoria.Id, dto.Posicao);
 
@@ -93,7 +96,18 @@ public class AlunoService : IAlunoService
         {
             await _unitOfWork.ExecutarEmTransacaoAsync(async () =>
             {
-                await _alunoRepository.AdicionarAsync(aluno);
+                if (alunoInativo != null)
+                {
+                    alunoInativo.AtualizarDados(dto.NomeCompleto, dto.DataNascimento, dto.NivelTecnico, dto.FotoUrl ?? alunoInativo.FotoUrl,
+                                                dto.ResponsavelNome, cpfDoResponsavel, dto.Telefone, dto.Endereco, dto.TurmaId, categoria.Id, dto.Posicao);
+                    alunoInativo.Reativar();
+                    await _alunoRepository.AtualizarAsync(alunoInativo);
+                    await _contratoService.CancelarContratosAtivosDoAlunoAsync(alunoInativo.Id);
+                }
+                else
+                {
+                    await _alunoRepository.AdicionarAsync(aluno);
+                }
 
                 var resultadoDoContrato = await _contratoService.CriarAsync(aluno.Id);
                 if (!resultadoDoContrato.Status)
@@ -133,6 +147,10 @@ public class AlunoService : IAlunoService
         var existe = await _alunoRepository.ExisteComMesmoNomeEDataNascimentoAsync(dto.NomeCompleto, dto.DataNascimento, id);
         if (existe) return new AlunoResponseDTO { Status = false, Message = "Outro aluno já possui este nome e data de nascimento." };
 
+        var inativoComMesmoNome = await _alunoRepository.ObterInativoPorNomeEDataNascimentoAsync(dto.NomeCompleto, dto.DataNascimento, id);
+        if (inativoComMesmoNome != null)
+            return new AlunoResponseDTO { Status = false, Message = "Já existe um aluno inativo com este nome e data de nascimento." };
+
         var turma = await _turmaRepository.ObterPorIdAsync(dto.TurmaId);
         if (turma == null)
         {
@@ -168,6 +186,9 @@ public class AlunoService : IAlunoService
 
         aluno.Desativar();
         await _alunoRepository.AtualizarAsync(aluno);
+
+        // Aluno inativo não gera mais cobrança: o contrato ativo é cancelado para sair do financeiro.
+        await _contratoService.CancelarContratosAtivosDoAlunoAsync(id);
 
         return new AlunoResponseDTO { Status = true, Message = "Aluno inativado com sucesso." };
     }
