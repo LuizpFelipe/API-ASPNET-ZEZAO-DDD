@@ -119,4 +119,53 @@ public class TurmaServiceTest
         Assert.False((await _servico.CriarAsync(semCategoria)).Status);
         Assert.False((await _servico.CriarAsync(semProfessor)).Status);
     }
+
+    [Fact]
+    public async Task Inativa_Turma_Sem_Alunos_Ativos_E_Reativa_Depois()
+    {
+        var turma = (await _servico.CriarAsync(CriarRequisicao("Turma A", "Segunda", "17h", _professor))).Data!;
+
+        var inativada = await _servico.InativarAsync(turma.Id);
+        Assert.True(inativada.Status);
+        Assert.False(turma.Ativa);
+
+        var reativada = await _servico.ReativarAsync(turma.Id);
+        Assert.True(reativada.Status);
+        Assert.True(turma.Ativa);
+    }
+
+    [Fact]
+    public async Task Recusa_Inativar_Turma_Com_Alunos_Ativos()
+    {
+        var turma = (await _servico.CriarAsync(CriarRequisicao("Turma A", "Segunda", "17h", _professor))).Data!;
+        _turmaRepositorio.AlunosNaoInativos = 3;
+
+        var resultado = await _servico.InativarAsync(turma.Id);
+
+        Assert.False(resultado.Status);
+        Assert.True(turma.Ativa);
+    }
+
+    [Fact]
+    public async Task Recusa_Inativar_Turma_Ja_Inativa_E_Reativar_Turma_Ja_Ativa()
+    {
+        var turma = (await _servico.CriarAsync(CriarRequisicao("Turma A", "Segunda", "17h", _professor))).Data!;
+
+        Assert.False((await _servico.ReativarAsync(turma.Id)).Status);
+        await _servico.InativarAsync(turma.Id);
+        Assert.False((await _servico.InativarAsync(turma.Id)).Status);
+    }
+
+    [Fact]
+    public async Task Turma_Inativa_Nao_Bloqueia_Reuso_Do_Nome_E_Reativar_Detecta_Conflito()
+    {
+        var turmaAntiga = (await _servico.CriarAsync(CriarRequisicao("Turma A", "Segunda", "17h", _professor))).Data!;
+        await _servico.InativarAsync(turmaAntiga.Id);
+
+        var nova = await _servico.CriarAsync(CriarRequisicao("Turma A", "Segunda", "17h", _professor));
+        Assert.True(nova.Status);
+
+        var reativacao = await _servico.ReativarAsync(turmaAntiga.Id);
+        Assert.False(reativacao.Status);
+    }
 }

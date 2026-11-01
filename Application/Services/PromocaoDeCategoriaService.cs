@@ -68,7 +68,7 @@ public class PromocaoDeCategoriaService : IPromocaoDeCategoriaService
     /// <summary>Prefere a turma do mesmo professor e horário, depois a do mesmo professor, depois a do mesmo horário.</summary>
     private async Task<Turma?> EscolherTurmaAsync(Guid categoriaId, Turma? turmaAtual)
     {
-        var candidatas = (await _turmaRepository.ObterPorCategoriaAsync(categoriaId)).ToList();
+        var candidatas = (await _turmaRepository.ObterPorCategoriaAsync(categoriaId)).Where(turma => turma.Ativa).ToList();
         if (candidatas.Count == 0) return null;
 
         return candidatas

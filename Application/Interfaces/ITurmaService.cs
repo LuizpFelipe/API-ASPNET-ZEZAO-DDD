@@ -14,5 +14,7 @@ namespace Application.Interfaces
         Task<TurmaResponseDTO> CriarAsync(CriarTurmaRequestDTO dto);
         Task<TurmaResponseDTO> AtualizarAsync(Guid id, AtualizarTurmaRequestDTO dto);
         Task<TurmaResponseDTO> RemoverAsync(Guid id);
+        Task<TurmaResponseDTO> InativarAsync(Guid id);
+        Task<TurmaResponseDTO> ReativarAsync(Guid id);
     }
 }

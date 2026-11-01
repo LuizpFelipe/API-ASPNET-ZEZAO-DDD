@@ -12,5 +12,6 @@ namespace Domain.Interfaces
         Task AtualizarAsync(Turma turma);
         Task RemoverAsync(Turma turma);
         Task<bool> PossuiVinculosAsync(Guid turmaId);
+        Task<int> ContarAlunosNaoInativosAsync(Guid turmaId);
     }
 }

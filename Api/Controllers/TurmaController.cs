@@ -58,6 +58,24 @@ namespace Api.Controllers
         }
 
         [Authorize(Roles = "Coordenador")]
+        [HttpPatch("{id}/inativar")]
+        public async Task<IActionResult> Inativar(Guid id)
+        {
+            var result = await _turmaService.InativarAsync(id);
+            if (!result.Status) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Coordenador")]
+        [HttpPatch("{id}/reativar")]
+        public async Task<IActionResult> Reativar(Guid id)
+        {
+            var result = await _turmaService.ReativarAsync(id);
+            if (!result.Status) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Coordenador")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {

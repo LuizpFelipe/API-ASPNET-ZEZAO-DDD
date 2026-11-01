@@ -27,7 +27,7 @@ namespace Infrastructure.Repositories
 
         public async Task<IEnumerable<Turma>> ObterTurmasAsync(Guid? professorId)
         {
-            IQueryable<Turma> query = _context.Set<Turma>().AsNoTracking();
+            IQueryable<Turma> query = _context.Set<Turma>().AsNoTracking().Where(t => t.Ativa);
 
             if (professorId.HasValue)
                 query = query.Where(t => t.ProfessorId == professorId.Value);
