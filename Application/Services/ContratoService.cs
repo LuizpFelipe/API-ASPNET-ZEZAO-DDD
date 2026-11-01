@@ -16,10 +16,11 @@ public class ContratoService : IContratoService
     private readonly ITurmaRepository _turmaRepository;
     private readonly IContratoPdfService _pdfService;
     private readonly ConfiguracoesContrato _configuracoes;
+    private readonly IRelogio _relogio;
 
     public ContratoService(IContratoRepository contratoRepository, IParcelaRepository parcelaRepository,
                            IAlunoRepository alunoRepository, ITurmaRepository turmaRepository,
-                           IContratoPdfService pdfService, ConfiguracoesContrato configuracoes)
+                           IContratoPdfService pdfService, ConfiguracoesContrato configuracoes, IRelogio relogio)
     {
         _contratoRepository = contratoRepository;
         _parcelaRepository = parcelaRepository;
@@ -27,6 +28,7 @@ public class ContratoService : IContratoService
         _turmaRepository = turmaRepository;
         _pdfService = pdfService;
         _configuracoes = configuracoes;
+        _relogio = relogio;
     }
 
     public async Task<ContratoResponseDTO> CriarAsync(Guid alunoId)
@@ -41,7 +43,7 @@ public class ContratoService : IContratoService
         if (await _contratoRepository.ExisteContratoAtivoDoAlunoAsync(alunoId))
             return new ContratoResponseDTO { Status = false, Message = "O aluno já possui um contrato ativo." };
 
-        var dataInicio = DateOnly.FromDateTime(DateTime.Now);
+        var dataInicio = _relogio.HojeNoBrasil();
         var dataFim = dataInicio.AddYears(1);
 
         var contrato = new Contrato(alunoId, dataInicio, dataFim, _configuracoes.ValorParcela, _configuracoes.QuantidadeParcelas);
