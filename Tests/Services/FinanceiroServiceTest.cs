@@ -60,6 +60,59 @@ namespace Tests
             await _parcelaRepository.Received(1).AtualizarAsync(parcela);
         }
 
+        private Aluno CriarAlunoInadimplente()
+        {
+            var aluno = new Aluno("Enzo Ferreira", new DateOnly(2015, 3, 1), NivelTecnico.Iniciante, null, "Marcos Ferreira",
+                "52998224725", "(44) 99999-1234", "Rua A", Guid.NewGuid(), Guid.NewGuid());
+            aluno.MarcarComoInadimplente();
+            return aluno;
+        }
+
+        [Fact]
+        public async Task RegistrarPagamento_Should_Regularize_Aluno_When_No_Overdue_Parcela_Remains()
+        {
+            var alunoRepository = Substitute.For<IAlunoRepository>();
+            var service = new FinanceiroService(_parcelaRepository, _avisoRepository, _whatsAppService, _relogio, alunoRepository);
+            var aluno = CriarAlunoInadimplente();
+            var parcela = new Parcela(Guid.NewGuid(), 1, Hoje.AddDays(-5), 150.00m);
+            _parcelaRepository.ObterPorIdAsync(parcela.Id).Returns(parcela);
+            _parcelaRepository.ObterDetalhadaPorIdAsync(parcela.Id)
+                .Returns(new ParcelaDetalhada(parcela, aluno.Id, aluno.NomeCompleto, aluno.ResponsavelNome, aluno.Telefone, StatusContrato.Ativo));
+            _parcelaRepository.ObterDetalhadasAsync(aluno.Id, "atrasado", null, Hoje)
+                .Returns(new List<ParcelaDetalhada>());
+            alunoRepository.ObterPorIdAsync(aluno.Id).Returns(aluno);
+
+            var result = await service.RegistrarPagamentoAsync(parcela.Id);
+
+            Assert.True(result.Status);
+            Assert.Equal(StatusAluno.Ativo, aluno.Status);
+            await alunoRepository.Received(1).AtualizarAsync(aluno);
+        }
+
+        [Fact]
+        public async Task RegistrarPagamento_Should_Keep_Aluno_Inadimplente_When_Another_Overdue_Parcela_Remains()
+        {
+            var alunoRepository = Substitute.For<IAlunoRepository>();
+            var service = new FinanceiroService(_parcelaRepository, _avisoRepository, _whatsAppService, _relogio, alunoRepository);
+            var aluno = CriarAlunoInadimplente();
+            var parcelaPaga = new Parcela(Guid.NewGuid(), 1, Hoje.AddDays(-40), 150.00m);
+            var parcelaAtrasada = new Parcela(Guid.NewGuid(), 2, Hoje.AddDays(-10), 150.00m);
+            _parcelaRepository.ObterPorIdAsync(parcelaPaga.Id).Returns(parcelaPaga);
+            _parcelaRepository.ObterDetalhadaPorIdAsync(parcelaPaga.Id)
+                .Returns(new ParcelaDetalhada(parcelaPaga, aluno.Id, aluno.NomeCompleto, aluno.ResponsavelNome, aluno.Telefone, StatusContrato.Ativo));
+            _parcelaRepository.ObterDetalhadasAsync(aluno.Id, "atrasado", null, Hoje)
+                .Returns(new List<ParcelaDetalhada>
+                {
+                    new ParcelaDetalhada(parcelaAtrasada, aluno.Id, aluno.NomeCompleto, aluno.ResponsavelNome, aluno.Telefone, StatusContrato.Ativo)
+                });
+            alunoRepository.ObterPorIdAsync(aluno.Id).Returns(aluno);
+
+            await service.RegistrarPagamentoAsync(parcelaPaga.Id);
+
+            Assert.Equal(StatusAluno.Inadimplente, aluno.Status);
+            await alunoRepository.DidNotReceive().AtualizarAsync(Arg.Any<Aluno>());
+        }
+
         [Fact]
         public async Task RegistrarPagamento_Should_Not_Return_The_Entity_In_Data()
         {
