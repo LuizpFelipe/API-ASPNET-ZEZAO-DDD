@@ -71,6 +71,8 @@ public class TurmaRepositorioEmMemoria : ITurmaRepository
     public Task AtualizarAsync(Turma turma) => Task.CompletedTask;
     public Task RemoverAsync(Turma turma) { Turmas.Remove(turma); return Task.CompletedTask; }
     public Task<bool> PossuiVinculosAsync(Guid turmaId) => Task.FromResult(false);
+    public int AlunosNaoInativos { get; set; }
+    public Task<int> ContarAlunosNaoInativosAsync(Guid turmaId) => Task.FromResult(AlunosNaoInativos);
 }
 
 public class ProfessorRepositorioEmMemoria : IProfessorRepository

@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +55,11 @@ namespace Infrastructure.Repositories
         {
             _context.Turmas.Remove(turma);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<int> ContarAlunosNaoInativosAsync(Guid turmaId)
+        {
+            return await _context.Set<Aluno>().CountAsync(a => a.TurmaId == turmaId && a.Status != StatusAluno.Inativo);
         }
 
         public async Task<bool> PossuiVinculosAsync(Guid turmaId)

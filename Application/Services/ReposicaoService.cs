@@ -59,6 +59,9 @@ public class ReposicaoService : IReposicaoService
         if (turmaDestino == null)
             return Falha("Turma de destino não encontrada.");
 
+        if (!turmaDestino.Ativa)
+            return Falha("A turma de destino está inativa.");
+
         // O aluno precisa ser da turma de origem e a aula perdida precisa ter existido nessa data
         if (aluno.TurmaId != turmaOrigem.Id)
             return Falha("O aluno não pertence à turma de origem.");

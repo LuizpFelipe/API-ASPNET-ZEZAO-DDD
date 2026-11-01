@@ -538,6 +538,9 @@ namespace Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("CategoriaId")
                         .HasColumnType("uuid");
 
