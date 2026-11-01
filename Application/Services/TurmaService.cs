@@ -119,6 +119,44 @@ namespace Application.Services
             return new TurmaResponseDTO { Status = true, Message = "Removida com sucesso" };
         }
 
+        public async Task<TurmaResponseDTO> InativarAsync(Guid id)
+        {
+            var turma = await _turmaRepository.ObterPorIdAsync(id);
+            if (turma == null) return new TurmaResponseDTO { Status = false, Message = "Turma não encontrada" };
+
+            if (!turma.Ativa)
+                return new TurmaResponseDTO { Status = false, Message = "A turma já está inativa." };
+
+            var alunosAtivos = await _turmaRepository.ContarAlunosNaoInativosAsync(id);
+            if (alunosAtivos > 0)
+                return new TurmaResponseDTO
+                {
+                    Status = false,
+                    Message = $"Não é possível inativar a turma: ela ainda tem {alunosAtivos} aluno(s) ativo(s). Transfira-os para outra turma antes."
+                };
+
+            turma.Inativar();
+            await _turmaRepository.AtualizarAsync(turma);
+            return new TurmaResponseDTO { Status = true, Message = "Turma inativada com sucesso", Data = turma };
+        }
+
+        public async Task<TurmaResponseDTO> ReativarAsync(Guid id)
+        {
+            var turma = await _turmaRepository.ObterPorIdAsync(id);
+            if (turma == null) return new TurmaResponseDTO { Status = false, Message = "Turma não encontrada" };
+
+            if (turma.Ativa)
+                return new TurmaResponseDTO { Status = false, Message = "A turma já está ativa." };
+
+            var mensagemDeConflito = await VerificarConflitoAsync(id, turma.Nome, turma.DiasSemana, turma.Horario, turma.CategoriaId, turma.ProfessorId);
+            if (mensagemDeConflito != null)
+                return new TurmaResponseDTO { Status = false, Message = mensagemDeConflito };
+
+            turma.Reativar();
+            await _turmaRepository.AtualizarAsync(turma);
+            return new TurmaResponseDTO { Status = true, Message = "Turma reativada com sucesso", Data = turma };
+        }
+
         private static string? ValidarNomeEHorario(string? nome, string? horario)
         {
             if (string.IsNullOrWhiteSpace(nome)) return "Informe o nome da turma.";
@@ -129,7 +167,7 @@ namespace Application.Services
 
         private async Task<string?> VerificarConflitoAsync(Guid? ignorarId, string nome, string diasSemana, string horario, Guid categoriaId, Guid professorId)
         {
-            var turmas = (await _turmaRepository.ObterTodasAsync()).Where(turma => turma.Id != ignorarId).ToList();
+            var turmas = (await _turmaRepository.ObterTodasAsync()).Where(turma => turma.Id != ignorarId && turma.Ativa).ToList();
             var diasInformados = DiasDaSemana.Converter(DiasDaSemana.Padronizar(diasSemana));
 
             if (turmas.Any(turma => turma.CategoriaId == categoriaId

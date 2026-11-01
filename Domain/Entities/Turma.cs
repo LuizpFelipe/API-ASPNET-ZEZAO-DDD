@@ -10,6 +10,7 @@ namespace Domain.Entities
         public string Horario { get; private set; }
         public Guid CategoriaId { get; private set; }
         public Guid ProfessorId { get; private set; }
+        public bool Ativa { get; private set; }
 
         public Turma(string nome, string diasSemana, string horario, Guid categoriaId, Guid professorId)
         {
@@ -19,6 +20,7 @@ namespace Domain.Entities
             Horario = horario;
             CategoriaId = categoriaId;
             ProfessorId = professorId;
+            Ativa = true;
         }
 
         public bool TemAulaEm(DateOnly data)
@@ -35,6 +37,14 @@ namespace Domain.Entities
             ProfessorId = professorId;
         }
 
+        public void Inativar()
+        {
+            Ativa = false;
+        }
 
+        public void Reativar()
+        {
+            Ativa = true;
+        }
     }
 }

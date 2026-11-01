@@ -67,6 +67,10 @@ public class AlunoService : IAlunoService
         {
             return new AlunoResponseDTO { Status = false, Message = "Turma não encontrada." };
         }
+        if (!turma.Ativa)
+        {
+            return new AlunoResponseDTO { Status = false, Message = "A turma está inativa. Escolha outra turma." };
+        }
 
         int idade = CalcularIdade(dto.DataNascimento);
 
@@ -133,6 +137,10 @@ public class AlunoService : IAlunoService
         if (turma == null)
         {
             return new AlunoResponseDTO { Status = false, Message = "Turma não encontrada." };
+        }
+        if (!turma.Ativa && aluno.TurmaId != dto.TurmaId)
+        {
+            return new AlunoResponseDTO { Status = false, Message = "A turma está inativa. Escolha outra turma." };
         }
 
         int idade = CalcularIdade(dto.DataNascimento);
