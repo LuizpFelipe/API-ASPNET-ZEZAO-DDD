@@ -59,9 +59,9 @@ namespace Api.Controllers
 
         [Authorize(Roles = "Coordenador")]
         [HttpPatch("{id}/inativar")]
-        public async Task<IActionResult> Inativar(Guid id)
+        public async Task<IActionResult> Inativar(Guid id, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] InativarTurmaRequestDTO? dto)
         {
-            var result = await _turmaService.InativarAsync(id);
+            var result = await _turmaService.InativarAsync(id, dto?.TurmaDestinoId);
             if (!result.Status) return BadRequest(result);
             return Ok(result);
         }

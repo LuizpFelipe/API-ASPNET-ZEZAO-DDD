@@ -147,6 +147,36 @@ public class TurmaServiceTest
     }
 
     [Fact]
+    public async Task Inativa_Turma_Com_Alunos_Transferindo_Para_Outra_Turma_Da_Mesma_Categoria()
+    {
+        var origem = (await _servico.CriarAsync(CriarRequisicao("Turma A", "Segunda", "17h", _professor))).Data!;
+        var destino = (await _servico.CriarAsync(CriarRequisicao("Turma B", "Terça", "18h", _outroProfessor))).Data!;
+        _turmaRepositorio.AlunosNaoInativos = 2;
+
+        var resultado = await _servico.InativarAsync(origem.Id, destino.Id);
+
+        Assert.True(resultado.Status);
+        Assert.False(origem.Ativa);
+        Assert.Equal(destino.Id, _turmaRepositorio.DestinoDaUltimaTransferencia);
+    }
+
+    [Fact]
+    public async Task Recusa_Transferir_Para_Turma_Inativa_Ou_Ela_Mesma()
+    {
+        var origem = (await _servico.CriarAsync(CriarRequisicao("Turma A", "Segunda", "17h", _professor))).Data!;
+        var destino = (await _servico.CriarAsync(CriarRequisicao("Turma B", "Terça", "18h", _outroProfessor))).Data!;
+        _turmaRepositorio.AlunosNaoInativos = 2;
+
+        Assert.False((await _servico.InativarAsync(origem.Id, origem.Id)).Status);
+
+        _turmaRepositorio.AlunosNaoInativos = 0;
+        await _servico.InativarAsync(destino.Id);
+        _turmaRepositorio.AlunosNaoInativos = 2;
+        Assert.False((await _servico.InativarAsync(origem.Id, destino.Id)).Status);
+        Assert.True(origem.Ativa);
+    }
+
+    [Fact]
     public async Task Recusa_Inativar_Turma_Ja_Inativa_E_Reativar_Turma_Ja_Ativa()
     {
         var turma = (await _servico.CriarAsync(CriarRequisicao("Turma A", "Segunda", "17h", _professor))).Data!;

@@ -474,6 +474,7 @@ public class RotinaFinanceiraServiceTest
         public Task RemoverAsync(Turma turma) => throw new NotImplementedException();
         public Task<bool> PossuiVinculosAsync(Guid turmaId) => throw new NotImplementedException();
         public Task<int> ContarAlunosNaoInativosAsync(Guid turmaId) => throw new NotImplementedException();
+        public Task SalvarInativacaoAsync(Turma turmaInativada, Guid? turmaDestinoId) => throw new NotImplementedException();
     }
 
     private sealed class ProfessorRepositorioDeTeste : IProfessorRepository
