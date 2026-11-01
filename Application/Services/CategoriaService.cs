@@ -9,10 +9,12 @@ namespace Application.Services
     public class CategoriaService : ICategoriaService
     {
         private readonly ICategoriaRepository _repository;
+        private readonly IRelogio _relogio;
 
-        public CategoriaService(ICategoriaRepository repository)
+        public CategoriaService(ICategoriaRepository repository, IRelogio relogio)
         {
             _repository = repository;
+            _relogio = relogio;
         }
 
         public async Task<IEnumerable<CategoriaDataDTO>> ListarAsync()
@@ -130,7 +132,7 @@ namespace Application.Services
 
         public async Task<CategoriaDataDTO?> CalcularCategoriaPorIdadeAsync(DateOnly dataNascimento)
         {
-            var hoje = DateOnly.FromDateTime(DateTime.Today);
+            var hoje = _relogio.HojeNoBrasil();
             int idade = hoje.Year - dataNascimento.Year;
             if (hoje < dataNascimento.AddYears(idade))
             {
