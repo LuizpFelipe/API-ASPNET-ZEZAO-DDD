@@ -180,7 +180,7 @@ namespace Application.Services
             return null;
         }
 
-        private async Task<string?> VerificarConflitoAsync(Guid? ignorarId, string nome, string diasSemana, string horario, Guid categoriaId, Guid professorId)
+        private async Task<string?> VerificarConflitoAsync(Guid? ignorarId, string nome, string? diasSemana, string horario, Guid categoriaId, Guid professorId)
         {
             var turmas = (await _turmaRepository.ObterTodasAsync()).Where(turma => turma.Id != ignorarId && turma.Ativa).ToList();
             var diasInformados = DiasDaSemana.Converter(DiasDaSemana.Padronizar(diasSemana));
