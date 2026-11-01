@@ -174,6 +174,7 @@ namespace Application.Services
         private static string? ValidarNomeEHorario(string? nome, string? horario)
         {
             if (string.IsNullOrWhiteSpace(nome)) return "Informe o nome da turma.";
+            if (nome.Trim().Length > 100) return "O nome da turma deve ter no máximo 100 caracteres.";
             if (!HorarioValidador.EhValido(horario)) return "Horário inválido. Use um formato como 17h, 17h30 ou 17:30.";
 
             return null;

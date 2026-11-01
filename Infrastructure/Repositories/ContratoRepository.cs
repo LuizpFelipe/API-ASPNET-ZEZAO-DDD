@@ -41,4 +41,11 @@ public class ContratoRepository : IContratoRepository
     {
         return await _context.Contratos.AnyAsync(contrato => contrato.AlunoId == alunoId && contrato.Status == StatusContrato.Ativo);
     }
+
+    public async Task<IEnumerable<Contrato>> ObterAtivosDoAlunoAsync(Guid alunoId)
+    {
+        return await _context.Contratos
+            .Where(contrato => contrato.AlunoId == alunoId && contrato.Status == StatusContrato.Ativo)
+            .ToListAsync();
+    }
 }

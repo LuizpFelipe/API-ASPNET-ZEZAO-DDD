@@ -102,6 +102,7 @@ namespace Application.Services
         private static string? ValidarDadosDaCategoria(string? nome, int idadeMin, int idadeMax)
         {
             if (string.IsNullOrWhiteSpace(nome)) return "O nome da categoria é obrigatório.";
+            if (nome.Trim().Length > 50) return "O nome da categoria deve ter no máximo 50 caracteres.";
             if (idadeMin < 0 || idadeMax < 0) return "As idades não podem ser negativas.";
             if (idadeMin > idadeMax) return "A idade mínima não pode ser maior que a idade máxima.";
 

@@ -9,4 +9,5 @@ public interface IContratoRepository
     Task AdicionarAsync(Contrato contrato);
     Task AtualizarAsync(Contrato contrato);
     Task<bool> ExisteContratoAtivoDoAlunoAsync(Guid alunoId);
+    Task<IEnumerable<Contrato>> ObterAtivosDoAlunoAsync(Guid alunoId);
 }

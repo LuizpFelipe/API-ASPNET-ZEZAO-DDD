@@ -10,4 +10,5 @@ public interface IContratoService
     Task<ContratoResponseDTO> ObterPorIdAsync(Guid id);
     Task<ContratoResponseDTO> AtualizarAsync(Guid id, AtualizarContratoRequestDTO dto);
     Task<ContratoResponseDTO> GerarPdfAsync(Guid id);
+    Task<int> CancelarContratosAtivosDoAlunoAsync(Guid alunoId);
 }
