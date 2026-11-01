@@ -193,7 +193,10 @@ if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("See
     {
         var relogio = scope.ServiceProvider.GetRequiredService<IRelogio>();
         var senhaDosProfessores = builder.Configuration["Seed:SenhaDosProfessoresDeDemonstracao"] ?? "professor123";
-        var resumo = await DadosDeDemonstracaoSeeder.SeedAsync(dbContext, securityService, relogio.HojeNoBrasil(), senhaDosProfessores);
+        DateOnly? dataDaApresentacao = DateOnly.TryParse(builder.Configuration["Seed:DataDaApresentacao"], out var dataDaApresentacaoConfigurada)
+            ? dataDaApresentacaoConfigurada
+            : null;
+        var resumo = await DadosDeDemonstracaoSeeder.SeedAsync(dbContext, securityService, relogio.HojeNoBrasil(), senhaDosProfessores, dataDaApresentacao);
         app.Logger.LogInformation("Dados de demonstração: {Resumo}", resumo);
     }
 }
