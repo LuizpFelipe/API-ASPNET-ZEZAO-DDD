@@ -17,13 +17,16 @@ namespace Application.Services
         private readonly IAvisoCobrancaRepository _avisoRepository;
         private readonly IWhatsAppService _whatsAppService;
         private readonly IRelogio _relogio;
+        private readonly IAlunoRepository? _alunoRepository;
 
         public FinanceiroService(
             IParcelaRepository parcelaRepository,
             IAvisoCobrancaRepository avisoRepository,
             IWhatsAppService whatsAppService,
-            IRelogio relogio)
+            IRelogio relogio,
+            IAlunoRepository? alunoRepository = null)
         {
+            _alunoRepository = alunoRepository;
             _parcelaRepository = parcelaRepository;
             _avisoRepository = avisoRepository;
             _whatsAppService = whatsAppService;
@@ -51,6 +54,8 @@ namespace Application.Services
 
             await _parcelaRepository.AtualizarAsync(parcela);
 
+            await RegularizarAlunoSeNaoHouverAtrasoAsync(parcelaId);
+
             return new ParcelaResponseDTO
             {
                 Status = true,
@@ -66,6 +71,22 @@ namespace Application.Services
                     parcela.DataPagamento
                 }
             };
+        }
+
+        /// <summary>Se o aluno não tem mais parcela atrasada, tira de inadimplente na hora, sem esperar a rotina diária.</summary>
+        private async Task RegularizarAlunoSeNaoHouverAtrasoAsync(Guid parcelaId)
+        {
+            if (_alunoRepository == null) return;
+
+            var detalhada = await _parcelaRepository.ObterDetalhadaPorIdAsync(parcelaId);
+            if (detalhada == null) return;
+
+            var parcelasAtrasadas = await _parcelaRepository.ObterDetalhadasAsync(detalhada.AlunoId, "atrasado", null, _relogio.HojeNoBrasil());
+            if (parcelasAtrasadas.Any()) return;
+
+            var aluno = await _alunoRepository.ObterPorIdAsync(detalhada.AlunoId);
+            if (aluno != null && aluno.RegularizarSituacao())
+                await _alunoRepository.AtualizarAsync(aluno);
         }
 
         public async Task<ParcelaResponseDTO> DispararCobrancaAsync(Guid parcelaId)
